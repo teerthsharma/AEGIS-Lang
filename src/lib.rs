@@ -16,10 +16,11 @@
 //!
 //! ═══════════════════════════════════════════════════════════════════════════════
 
-#![no_std]
-#![no_main]
+#![cfg_attr(not(test), no_std)]
+#![cfg_attr(not(test), no_main)]
 #![feature(abi_x86_interrupt)]
 
+#[cfg(not(test))]
 extern crate alloc;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -41,6 +42,9 @@ pub mod ml;    // ML regression engine
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+pub mod benchmarks;  // Rigorous benchmark suite
 
 use core::panic::PanicInfo;
 use bootloader::{entry_point, BootInfo};
