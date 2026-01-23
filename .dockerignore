@@ -1,42 +1,53 @@
-# Build artifacts
+# Build Artifacts
 target/
 *.rlib
 *.rmeta
+*.bin
+*.img
+*.iso
+*.iso.bin
+*.iso.lock
 
 # Cargo
 Cargo.lock
 .cargo/
+**/*.rs.bk
 
-# IDE
+# IDEs
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
+*.sublime-project
+*.sublime-workspace
 
-# OS
+# Logs and Temporary Files
+*.log
+*.txt
+*.tmp
+build_output.txt
+check_output.txt
+test_output.txt
+
+# OS Specific
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Docker
 docker/data/
+.docker-compose.lock
 
-# Test outputs
-*.log
-*.tmp
-
-# Documentation build
+# Documentation and Benchmarks
 /doc/
-
-# Coverage
-*.gcno
-*.gcda
-coverage/
-
-# Benchmarks
 /bench-results/
 
-# Local development
+# Local Environment
 .env
 .env.local
 *.local.toml

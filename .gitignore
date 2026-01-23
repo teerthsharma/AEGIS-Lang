@@ -1,20 +1,39 @@
-# Binaries
+# Binaries and Build Artifacts
 /target/
+*.bin
+*.img
+*.iso
+*.iso.bin
+*.iso.lock
 
-# Cargo lock for libraries
+# Cargo
 Cargo.lock
+**/*.rs.bk
 
-# IDE
+# Logs and Temporary Files
+*.log
+*.txt
+*.tmp
+build_output.txt
+check_output.txt
+test_output.txt
+
+# IDEs
 .idea/
 .vscode/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
 
-# OS
+# OS specific files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Build artifacts
-*.bin
-*.img
-*.iso
+# Docker
+.docker-compose.lock

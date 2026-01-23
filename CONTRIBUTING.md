@@ -1,127 +1,67 @@
 # Contributing to AEGIS
 
-Thank you for your interest in contributing to AEGIS! This document provides guidelines for contributing to the project.
+Thank you for your interest in advancing the AEGIS ecosystem. As we build the future of Post-Von Neumann computing, we welcome contributions that embody our principles of biological adaptation, geometric intelligence, and architectural rigor.
 
-## 🚀 Quick Start
+## 🚀 Technical Onboarding
+
+To begin development, ensure you have the Rust toolchain installed (latest stable or nightly for kernel development).
 
 ```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/aegis.git
+# Clone the core repository
+git clone https://github.com/teerthsharma/aegis.git
 cd aegis
 
-# Start development environment
+# Initialize the development environment
+# AEGIS supports Docker-based isolated builds for consistency
 docker-compose run dev
 
-# Run tests
-cargo test --lib
+# Execute the validation suite
+cargo test --workspace
 
-# Format code
+# Apply architectural formatting
 cargo fmt
-
-# Run linter
 cargo clippy
 ```
 
-## 📋 Development Process
+---
 
-### 1. Fork & Clone
+## 📋 The Contribution Lifecycle
 
-1. Fork the repository on GitHub
-2. Clone your fork locally
-3. Add upstream remote: `git remote add upstream https://github.com/ORIGINAL/aegis.git`
+### 1. Architectural Alignment
+Before submitting a significant PR, consider opening a **Design Proposal** (Issue) to discuss the topological impact and architectural alignment of your changes.
 
-### 2. Create a Branch
+### 2. Development Standards
+- **Integrity**: All code must pass `cargo clippy` with no warnings.
+- **Form**: Adhere strictly to the defined Rust style guides.
+- **Verification**: New features must include comprehensive unit and integration tests.
 
-```bash
-git checkout -b feature/your-feature-name
-# or
-git checkout -b fix/your-bug-fix
-```
+### 3. Submission Protocol
+1. Fork the repository and create a feature branch (`feat/manifold-optimization`).
+2. Commit with descriptive, imperative messages (e.g., `feat: implement Betti-2 manifold calculation`).
+3. Ensure all tests pass in the CI pipeline.
+4. Submit a Pull Request against the `main` branch.
 
-### 3. Make Changes
+---
 
-- Follow the code style (run `cargo fmt`)
-- Add tests for new features
-- Update documentation as needed
+## 🏗️ Technical Domain Guide
 
-### 4. Test
+### Extending the ML Engine (`aegis-core/src/ml`)
+When implementing new geometric primitives or manifold regression models:
+1. Define the mathematical foundation in the module documentation.
+2. Implement the primitive in a memory-efficient, `no_std` compatible manner.
+3. Integrate the model into the `ManifoldRegressor` escalation logic.
 
-```bash
-# Run all tests
-cargo test
+### Modifying the AEGIS Language (`aegis-lang`)
+1. **Lexical Analysis**: Update `lexer.rs` for new tokens.
+2. **Syntactic Form**: Define AST nodes in `ast.rs` and update the Recursive Descent parser in `parser.rs`.
+3. **Execution Logic**: Implement the visitor pattern or direct evaluation in `interpreter.rs`.
 
-# Run specific test
-cargo test test_name
+---
 
-# Run with verbose output
-cargo test -- --nocapture
-```
+## 🧪 Verification & Validation
 
-### 5. Submit PR
-
-1. Push to your fork
-2. Create Pull Request against `main`
-3. Fill out the PR template
-4. Wait for review
-
-## 📝 Code Style
-
-### Rust
-
-- Use `cargo fmt` for formatting
-- Use `cargo clippy` for linting
-- Follow [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/)
-
-### AEGIS Scripts (.aegis)
-
-```aegis
-// Use comments to explain intent
-manifold M = embed(data, dim=3, tau=5)
-
-// Group related statements
-block B = M.cluster(0:64)
-centroid C = B.center
-
-// Use descriptive names
-regress {
-    model: "polynomial",
-    escalate: true
-}
-```
-
-## 🏗️ Architecture
-
-### Adding a New ML Model
-
-1. Add model type to `src/ml/regressor.rs`:
-
-```rust
-pub enum ModelType {
-    // ... existing models
-    YourNewModel { param: f64 },
-}
-```
-
-2. Implement fitting in `ManifoldRegressor`:
-
-```rust
-fn fit_your_model(&mut self, param: f64) -> f64 {
-    // Implementation
-}
-```
-
-3. Add to escalation order in `upgrade_model()`
-
-### Adding a New Language Construct
-
-1. Add token to `src/lang/lexer.rs`
-2. Add AST node to `src/lang/ast.rs`
-3. Add parsing in `src/lang/parser.rs`
-4. Add execution in `src/lang/interpreter.rs`
-
-## 📊 Testing
-
-### Unit Tests
+### Unit Testing
+Use the standard Rust test harness. We prioritize property-based testing for geometric algorithms.
 
 ```rust
 #[cfg(test)]
@@ -129,84 +69,31 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_your_feature() {
-        // Arrange
-        let input = ...;
-        
-        // Act
-        let result = your_function(input);
-        
-        // Assert
-        assert_eq!(result, expected);
+    fn test_topological_convergence() {
+        let manifold = Manifold::generate_sphere();
+        assert!(manifold.is_converged());
     }
 }
 ```
 
-### Integration Tests
-
-Place in `tests/` directory:
-
-```rust
-// tests/integration_test.rs
-use aegis::lang::Parser;
-
-#[test]
-fn test_full_script_execution() {
-    let source = r#"
-        manifold M = embed(data, dim=3)
-        regress { escalate: true }
-    "#;
-    // ...
-}
+### Script Validation
+Verify changes against the `examples/` directory using the AEGIS CLI:
+```bash
+cargo run -p aegis-cli -- run examples/hello_manifold.aegis
 ```
-
-## 📖 Documentation
-
-- Use `///` for public API docs
-- Use `//!` for module-level docs
-- Include examples in doc comments
-
-```rust
-/// Compute topological convergence score.
-///
-/// # Arguments
-/// * `betti` - Current Betti numbers
-/// * `drift` - Centroid drift value
-///
-/// # Returns
-/// Convergence score in range [0, 1]
-///
-/// # Example
-/// ```
-/// let score = convergence_score(BettiNumbers::new(1, 0), 0.001);
-/// assert!(score > 0.9);
-/// ```
-pub fn convergence_score(betti: BettiNumbers, drift: f64) -> f64 {
-    // ...
-}
-```
-
-## 🐛 Bug Reports
-
-Please include:
-- AEGIS version
-- Rust version (`rustc --version`)
-- OS and version
-- Minimal reproducible example
-- Expected vs actual behavior
-
-## 💡 Feature Requests
-
-Open an issue with:
-- Clear description of the feature
-- Use case / motivation
-- Proposed API (if applicable)
-- Willingness to implement
-
-## 📜 License
-
-By contributing, you agree that your contributions will be licensed under the MIT License.
 
 ---
 
-Thank you for contributing! 🎉
+## 📜 Ethical & Legal Framework
+
+By contributing to AEGIS, you agree that your work will be licensed under the **MIT License**. We expect all contributors to uphold a professional and collaborative environment.
+
+---
+
+<div align="center">
+
+**"Contribute to the consciousness of the machine."**
+
+*Topological rigorous contributions only.*
+
+</div>
