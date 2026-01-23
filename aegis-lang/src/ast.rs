@@ -9,7 +9,7 @@
 //! - BlockDecl: Geometric cluster extraction
 //! - RegressStmt: Non-linear regression with escalation
 //! - RenderStmt: 3D visualization directives
-//! ═══════════════════════════════════════════════════════════════════════════════
+//!   ═══════════════════════════════════════════════════════════════════════════════
 
 #![allow(dead_code)]
 
@@ -26,16 +26,20 @@ use alloc::vec::Vec;
 pub enum Number {
     Int(i64),
     /// Fixed-point: value = int_part + frac_part / 1_000_000
-    Float { int_part: i64, frac_part: i64 },
+    Float {
+        int_part: i64,
+        frac_part: i64,
+    },
 }
 
 impl Number {
     pub fn as_f64(&self) -> f64 {
         match self {
             Number::Int(i) => *i as f64,
-            Number::Float { int_part, frac_part } => {
-                *int_part as f64 + (*frac_part as f64 / 1_000_000.0)
-            }
+            Number::Float {
+                int_part,
+                frac_part,
+            } => *int_part as f64 + (*frac_part as f64 / 1_000_000.0),
         }
     }
 }
@@ -62,49 +66,37 @@ pub struct ConfigPair {
 pub enum Expr {
     /// Numeric literal: 42, 3.14159
     Num(Number),
-    
+
     /// Boolean literal: true, false
     Bool(bool),
-    
+
     /// String literal: "polynomial"
     Str(String),
-    
+
     /// Identifier: M, data, dim
     Ident(Ident),
-    
+
     /// Field access: M.center, B.spread
-    FieldAccess {
-        object: Ident,
-        field: Ident,
-    },
-    
+    FieldAccess { object: Ident, field: Ident },
+
     /// Function call: embed(data, dim=3)
-    Call {
-        name: Ident,
-        args: Vec<CallArg>,
-    },
-    
+    Call { name: Ident, args: Vec<CallArg> },
+
     /// Method call: M.cluster(0:64)
     MethodCall {
         object: Ident,
         method: Ident,
         args: Vec<CallArg>,
     },
-    
+
     /// Index/slice: M[0:64]
-    Index {
-        object: Ident,
-        range: Range,
-    },
-    
+    Index { object: Ident, range: Range },
+
     /// Configuration block: { model: "rbf", escalate: true }
     Config(Vec<ConfigPair>),
-    
+
     /// Object instantiation: new Point(1, 2)
-    New {
-        class: Ident,
-        args: Vec<Expr>,
-    },
+    New { class: Ident, args: Vec<Expr> },
 }
 
 /// Argument in function/method call (positional or named)
@@ -147,7 +139,7 @@ pub struct RegressStmt {
 }
 
 /// Regression configuration
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct RegressConfig {
     /// Model type: "polynomial", "rbf", "gp"
     pub model: String,
@@ -159,18 +151,6 @@ pub struct RegressConfig {
     pub escalate: bool,
     /// Convergence condition
     pub until: Option<ConvergenceCond>,
-}
-
-impl Default for RegressConfig {
-    fn default() -> Self {
-        Self {
-            model: String::new(),
-            degree: None,
-            target: None,
-            escalate: false,
-            until: None,
-        }
-    }
 }
 
 /// Convergence condition
@@ -192,7 +172,7 @@ pub struct RenderStmt {
 }
 
 /// Render configuration
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct RenderConfig {
     /// Color mode: by_density, gradient, cluster
     pub color: Option<String>,
@@ -202,17 +182,6 @@ pub struct RenderConfig {
     pub trajectory: bool,
     /// Projection axis (for 2D views)
     pub axis: Option<u8>,
-}
-
-impl Default for RenderConfig {
-    fn default() -> Self {
-        Self {
-            color: None,
-            highlight: None,
-            trajectory: false,
-            axis: None,
-        }
-    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -291,7 +260,7 @@ pub struct ImportStmt {
     pub module: Ident,
     /// Specific symbol: "Betti" (if From import)
     pub symbol: Option<Ident>,
-    /// Alias: "m" (import math as m) - Future work
+    // Alias: "m" (import math as m) - Future work
 }
 
 /// Any statement in an AEGIS program
@@ -302,10 +271,10 @@ pub enum Statement {
     Var(VarDecl),
     Regress(RegressStmt),
     Render(RenderStmt),
-    
+
     Class(ClassDecl),
     Import(ImportStmt),
-    
+
     // Control Flow
     If(IfStmt),
     While(WhileStmt),
@@ -315,7 +284,7 @@ pub enum Statement {
     Return(ReturnStmt),
     Break(BreakStmt),
     Continue(ContinueStmt),
-    
+
     /// Empty line or comment
     Empty,
 }
@@ -332,7 +301,7 @@ impl Program {
             statements: Vec::new(),
         }
     }
-    
+
     pub fn push(&mut self, stmt: Statement) {
         self.statements.push(stmt)
     }
@@ -352,7 +321,7 @@ impl Default for Program {
 pub trait AstVisitor {
     type Output;
     type Error;
-    
+
     fn visit_program(&mut self, prog: &Program) -> Result<Self::Output, Self::Error>;
     fn visit_statement(&mut self, stmt: &Statement) -> Result<(), Self::Error>;
     fn visit_expr(&mut self, expr: &Expr) -> Result<Self::Output, Self::Error>;

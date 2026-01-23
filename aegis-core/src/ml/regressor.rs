@@ -11,8 +11,8 @@
 
 #![allow(dead_code)]
 
-use libm::{sqrt, pow};
 use heapless::Vec as HVec;
+use libm::{pow, sqrt};
 
 /// Maximum data points
 const MAX_POINTS: usize = 256;
@@ -66,7 +66,7 @@ impl Coefficients {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     pub fn from_slice(vals: &[f64]) -> Self {
         let mut c = Self::new();
         for (i, &v) in vals.iter().enumerate().take(MAX_DEGREE) {
@@ -75,17 +75,17 @@ impl Coefficients {
         }
         c
     }
-    
+
     /// Evaluate polynomial at x
     pub fn eval_polynomial(&self, x: f64) -> f64 {
         let mut result = 0.0;
         let mut x_pow = 1.0;
-        
+
         for i in 0..self.count {
             result += self.values[i] * x_pow;
             x_pow *= x;
         }
-        
+
         result
     }
 }
@@ -122,22 +122,22 @@ impl<const D: usize> ManifoldRegressor<D> {
             target_std: 1.0,
         }
     }
-    
+
     /// Add training data point
     pub fn add_point(&mut self, point: [f64; D], target: f64) {
         let _ = self.points.push(point);
         let _ = self.targets.push(target);
     }
-    
+
     /// Fit the model to data
     pub fn fit(&mut self) -> f64 {
         if self.points.is_empty() {
             return f64::MAX;
         }
-        
+
         // Compute mean and std for normalization
         self.compute_stats();
-        
+
         // Fit appropriate model
         match self.model {
             ModelType::Linear => self.fit_linear(),
@@ -147,33 +147,43 @@ impl<const D: usize> ManifoldRegressor<D> {
             ModelType::GeodesicRegression => self.fit_geodesic(),
         }
     }
-    
+
     /// Compute target statistics
     fn compute_stats(&mut self) {
         let n = self.targets.len() as f64;
-        if n == 0.0 { return; }
-        
+        if n == 0.0 {
+            return;
+        }
+
         // Mean
         let sum: f64 = self.targets.iter().sum();
         self.target_mean = sum / n;
-        
+
         // Std
-        let var: f64 = self.targets.iter()
-            .map(|&t| { let diff = t - self.target_mean; diff * diff })
-            .sum::<f64>() / n;
+        let var: f64 = self
+            .targets
+            .iter()
+            .map(|&t| {
+                let diff = t - self.target_mean;
+                diff * diff
+            })
+            .sum::<f64>()
+            / n;
         self.target_std = sqrt(var).max(1e-10);
     }
-    
+
     /// Fit linear model: y = a + b*x (using first manifold dimension)
     fn fit_linear(&mut self) -> f64 {
         let n = self.points.len() as f64;
-        if n == 0.0 { return f64::MAX; }
-        
+        if n == 0.0 {
+            return f64::MAX;
+        }
+
         let mut sum_x = 0.0;
         let mut sum_y = 0.0;
         let mut sum_xy = 0.0;
         let mut sum_xx = 0.0;
-        
+
         for (p, &t) in self.points.iter().zip(self.targets.iter()) {
             let x = p[0]; // First manifold dimension
             sum_x += x;
@@ -181,7 +191,7 @@ impl<const D: usize> ManifoldRegressor<D> {
             sum_xy += x * t;
             sum_xx += x * x;
         }
-        
+
         let denom = n * sum_xx - sum_x * sum_x;
         if abs(denom) < 1e-10 {
             self.coefficients = Coefficients::from_slice(&[self.target_mean, 0.0]);
@@ -190,23 +200,23 @@ impl<const D: usize> ManifoldRegressor<D> {
             let a = (sum_y - b * sum_x) / n;
             self.coefficients = Coefficients::from_slice(&[a, b]);
         }
-        
+
         self.compute_mse()
     }
-    
+
     /// Fit polynomial model
     fn fit_polynomial(&mut self, degree: u8) -> f64 {
         // Start with linear and add higher order corrections
         self.fit_linear();
-        
+
         let degree = (degree as usize).min(MAX_DEGREE - 1);
-        
+
         // Simple iterative refinement for higher orders
         // (In production, use proper least squares with Vandermonde)
         for d in 2..=degree {
             let mut correction = 0.0;
             let mut x_sum = 0.0;
-            
+
             for (p, &t) in self.points.iter().zip(self.targets.iter()) {
                 let x = p[0];
                 let pred = self.coefficients.eval_polynomial(x);
@@ -215,102 +225,104 @@ impl<const D: usize> ManifoldRegressor<D> {
                 correction += residual * x_d;
                 x_sum += x_d * x_d;
             }
-            
+
             if abs(x_sum) > 1e-10 {
                 self.coefficients.values[d] = correction / x_sum;
                 self.coefficients.count = d + 1;
             }
         }
-        
+
         self.compute_mse()
     }
-    
+
     /// Fit RBF kernel model (Nadaraya-Watson estimator)
     fn fit_rbf(&mut self, gamma: f64) -> f64 {
         // For prediction, we'll use kernel regression
         // Coefficients store reference points' weights
         self.coefficients = Coefficients::new();
-        
+
         // Compute weights based on kernel values
         let n = self.points.len();
         for i in 0..n.min(MAX_DEGREE) {
             self.coefficients.values[i] = 1.0 / n as f64;
         }
         self.coefficients.count = n.min(MAX_DEGREE);
-        
+
         // Store gamma in a special slot
         if n > 0 {
             self.coefficients.values[MAX_DEGREE - 1] = gamma;
         }
-        
+
         self.compute_mse()
     }
-    
+
     /// Fit Gaussian Process (approximate)
     fn fit_gp(&mut self, length_scale: f64) -> f64 {
         // Approximate GP as RBF with appropriate gamma
         let gamma = 1.0 / (2.0 * length_scale * length_scale);
         self.fit_rbf(gamma)
     }
-    
+
     /// Fit geodesic regression on manifold
     fn fit_geodesic(&mut self) -> f64 {
         // Geodesic regression: find curve on manifold minimizing distance
         // Approximate with polynomial in ambient coordinates
         self.fit_polynomial(4)
     }
-    
+
     /// Compute mean squared error
     fn compute_mse(&self) -> f64 {
-        if self.points.is_empty() { return f64::MAX; }
-        
+        if self.points.is_empty() {
+            return f64::MAX;
+        }
+
         let mut mse = 0.0;
         for (p, &t) in self.points.iter().zip(self.targets.iter()) {
             let pred = self.predict(p);
             let err = pred - t;
             mse += err * err;
         }
-        
+
         sqrt(mse / self.points.len() as f64)
     }
-    
+
     /// Predict target for a manifold point
     pub fn predict(&self, point: &[f64; D]) -> f64 {
         match self.model {
             ModelType::Linear | ModelType::Polynomial(_) | ModelType::GeodesicRegression => {
                 self.coefficients.eval_polynomial(point[0])
             }
-            ModelType::Rbf { gamma } => {
-                self.predict_rbf(point, gamma)
-            }
+            ModelType::Rbf { gamma } => self.predict_rbf(point, gamma),
             ModelType::GaussianProcess { length_scale } => {
                 let gamma = 1.0 / (2.0 * length_scale * length_scale);
                 self.predict_rbf(point, gamma)
             }
         }
     }
-    
+
     /// RBF prediction using kernel regression
     fn predict_rbf(&self, point: &[f64; D], gamma: f64) -> f64 {
-        if self.points.is_empty() { return 0.0; }
-        
+        if self.points.is_empty() {
+            return 0.0;
+        }
+
         let mut weighted_sum = 0.0;
         let mut weight_sum = 0.0;
-        
+
         for (p, &t) in self.points.iter().zip(self.targets.iter()) {
             let dist_sq = self.squared_distance(point, p);
             let weight = libm::exp(-gamma * dist_sq);
             weighted_sum += weight * t;
             weight_sum += weight;
         }
-        
+
         if weight_sum > 1e-10 {
             weighted_sum / weight_sum
         } else {
             self.target_mean
         }
     }
-    
+
     /// Squared Euclidean distance in manifold space
     fn squared_distance(&self, a: &[f64; D], b: &[f64; D]) -> f64 {
         let mut sum = 0.0;
@@ -320,22 +332,22 @@ impl<const D: usize> ManifoldRegressor<D> {
         }
         sum
     }
-    
+
     /// Get current error
     pub fn error(&self) -> f64 {
         self.compute_mse()
     }
-    
+
     /// Get fitted coefficients
     pub fn coefficients(&self) -> &Coefficients {
         &self.coefficients
     }
-    
+
     /// Get model type
     pub fn model(&self) -> ModelType {
         self.model
     }
-    
+
     /// Upgrade to more complex model
     pub fn upgrade_model(&mut self) {
         self.model = match self.model {
@@ -345,7 +357,9 @@ impl<const D: usize> ManifoldRegressor<D> {
             ModelType::Rbf { gamma } if gamma < 2.0 => ModelType::Rbf { gamma: gamma * 2.0 },
             ModelType::Rbf { .. } => ModelType::GaussianProcess { length_scale: 1.0 },
             ModelType::GaussianProcess { length_scale } if length_scale > 0.1 => {
-                ModelType::GaussianProcess { length_scale: length_scale / 2.0 }
+                ModelType::GaussianProcess {
+                    length_scale: length_scale / 2.0,
+                }
             }
             ModelType::GaussianProcess { .. } => ModelType::GeodesicRegression,
             ModelType::GeodesicRegression => ModelType::GeodesicRegression, // Max complexity
@@ -354,6 +368,9 @@ impl<const D: usize> ManifoldRegressor<D> {
 }
 
 fn abs(x: f64) -> f64 {
-    if x < 0.0 { -x } else { x }
+    if x < 0.0 {
+        -x
+    } else {
+        x
+    }
 }
-

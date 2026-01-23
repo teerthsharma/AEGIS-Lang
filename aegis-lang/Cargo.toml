@@ -27,11 +27,12 @@ description = "AEGIS Language: Lexer, Parser, AST, and Interpreter"
 default = ["std"]
 std = ["aegis-core/std", "alloc"]
 alloc = []
-no_std = ["aegis-core/no_std"]
+no_std = ["aegis-core/no_std", "alloc"]
 
 [dependencies]
 aegis-core = { path = "../aegis-core", default-features = false }
 libm = { workspace = true }
+heapless = { workspace = true }
 
 [lib]
 name = "aegis_lang"

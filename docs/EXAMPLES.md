@@ -316,6 +316,66 @@ window_center = window.center
 
 ---
 
+---
+
+## ML Library Examples
+
+### Example 16: Neural Network (MLP)
+
+Train a neural network on the manifold:
+
+```aegis
+// mlp_demo.aegis
+import ml
+
+// 1. Embed data
+manifold M = embed(data, dim=3, tau=2)
+
+// 2. Create Network
+let nn = MLP(0.01) // LR=0.01
+nn.add_layer(3, 8) // Input (3D embedding) -> Hidden
+nn.add_layer(8, 1) // Hidden -> Output
+
+// 3. Train Loop
+seal {
+    let loss = nn.train()
+    // Stops when loss stabilizes
+}
+```
+
+### Example 17: Clustering (K-Means)
+
+Group similar manifold regions:
+
+```aegis
+// kmeans_demo.aegis
+import ml
+
+manifold M = embed(data, dim=3, tau=5)
+
+// Create K-Means with K=3
+let kmeans = KMeans(3)
+
+// Fit to manifold points
+let result = kmeans.fit(M)
+```
+
+### Example 18: Image Convolution
+
+Process a 2D grid/image:
+
+```aegis
+// conv_demo.aegis
+import ml
+
+let conv = Conv2D() // Default 3x3 kernel
+
+// Forward pass on dummy data (simulated as list)
+let output = conv.forward(image_data)
+```
+
+---
+
 ## Complete Applications
 
 ### Application 1: Sensor Fusion

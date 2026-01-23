@@ -26,7 +26,7 @@ impl SerialPort {
             line_status: Port::new(base + 5),
         }
     }
-    
+
     fn init(&mut self) {
         unsafe {
             // Disable interrupts
@@ -44,14 +44,16 @@ impl SerialPort {
             Port::<u8>::new(COM1 + 4).write(0x0B);
         }
     }
-    
+
     fn is_transmit_empty(&mut self) -> bool {
         unsafe { self.line_status.read() & 0x20 != 0 }
     }
-    
+
     fn write_byte(&mut self, byte: u8) {
         while !self.is_transmit_empty() {}
-        unsafe { self.data.write(byte); }
+        unsafe {
+            self.data.write(byte);
+        }
     }
 }
 

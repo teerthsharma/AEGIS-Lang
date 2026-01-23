@@ -29,17 +29,19 @@ impl WebGLExporter {
     /// Generate HTML with Three.js visualization
     pub fn export_html(&self, points: &[[f64; 3]], title: &str) -> String<8192> {
         let mut html = String::new();
-        
+
         let _ = html.push_str("<!DOCTYPE html>\n<html><head><title>AEGIS - ");
         let _ = html.push_str(title);
         let _ = html.push_str("</title>\n");
         let _ = html.push_str("<script src=\"https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js\"></script>\n");
         let _ = html.push_str("</head><body style=\"margin:0;background:#1a1a2e\">\n");
         let _ = html.push_str("<script>\nconst points = [");
-        
+
         // Serialize points
         for (i, p) in points.iter().enumerate() {
-            if i > 0 { let _ = html.push(','); }
+            if i > 0 {
+                let _ = html.push(',');
+            }
             let _ = html.push('[');
             // Simple float formatting
             let x = p[0] as i32;
@@ -52,10 +54,12 @@ impl WebGLExporter {
             let _ = html.push_str(&format_i32(z));
             let _ = html.push(']');
         }
-        
+
         let _ = html.push_str("];\n");
         let _ = html.push_str("const scene = new THREE.Scene();\n");
-        let _ = html.push_str("const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);\n");
+        let _ = html.push_str(
+            "const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);\n",
+        );
         let _ = html.push_str("const renderer = new THREE.WebGLRenderer({antialias:true});\n");
         let _ = html.push_str("renderer.setSize(innerWidth, innerHeight);\n");
         let _ = html.push_str("document.body.appendChild(renderer.domElement);\n");
@@ -69,7 +73,7 @@ impl WebGLExporter {
         let _ = html.push_str("function animate(){requestAnimationFrame(animate);pc.rotation.y+=0.005;renderer.render(scene,camera);}\n");
         let _ = html.push_str("animate();\n");
         let _ = html.push_str("</script></body></html>");
-        
+
         html
     }
 }

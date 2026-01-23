@@ -18,10 +18,10 @@ extern crate alloc;
 // ═══════════════════════════════════════════════════════════════════════════════
 
 pub mod allocator;
-pub mod serial;
 pub mod interrupts;
-pub mod scheduler;
 pub mod loader;
+pub mod scheduler;
+pub mod serial;
 
 // Re-export core types
 pub use aegis_core::*;

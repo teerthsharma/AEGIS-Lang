@@ -43,8 +43,8 @@ rustyline = "14.0"
 
 # Kernel-specific
 bootloader = { version = "0.11", features = ["uefi"] }
-x86_64 = { version = "0.14", default-features = false, features = ["instructions"] }
-spin = { version = "0.9", default-features = false }
+x86_64 = { version = "0.14", default-features = false, features = ["instructions", "abi_x86_interrupt"] }
+spin = { version = "0.9", default-features = false, features = ["mutex", "lazy", "spin_mutex"] }
 volatile = "0.5"
 heapless = "0.8"
 

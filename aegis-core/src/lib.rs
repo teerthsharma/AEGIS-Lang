@@ -22,14 +22,16 @@ extern crate alloc;
 // Module Exports
 // ═══════════════════════════════════════════════════════════════════════════════
 
-pub mod topology;
-pub mod manifold;
 pub mod aether;
+pub mod governor;
+pub mod manifold;
 pub mod ml;
 pub mod state;
-pub mod governor;
+pub mod topology;
 
 // Re-export key types for convenience
-pub use topology::{TopologicalShape, VerifyResult, compute_betti_0, compute_betti_1, compute_shape, verify_shape};
-pub use manifold::{ManifoldPoint, TimeDelayEmbedder, SparseAttentionGraph, TopologicalPipeline};
-pub use aether::{BlockMetadata, HierarchicalBlockTree, DriftDetector};
+pub use aether::{BlockMetadata, DriftDetector, HierarchicalBlockTree};
+pub use manifold::{ManifoldPoint, SparseAttentionGraph, TimeDelayEmbedder, TopologicalPipeline};
+pub use topology::{
+    compute_betti_0, compute_betti_1, compute_shape, verify_shape, TopologicalShape, VerifyResult,
+};

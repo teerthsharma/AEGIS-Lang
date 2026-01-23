@@ -20,22 +20,26 @@
 #![allow(dead_code)]
 
 // Core modules
-pub mod linalg;
-pub mod regressor;
-pub mod convergence;
 pub mod benchmark;
+pub mod convergence;
+pub mod linalg;
+pub mod convolution;
+pub mod regressor;
 
 // Extended ML library
-pub mod clustering;
 pub mod classification;
+pub mod clustering;
 pub mod neural;
 
 // Re-export key types
-pub use regressor::*;
-pub use convergence::*;
 pub use benchmark::*;
-pub use linalg::{Vector, Matrix};
-pub use clustering::{KMeans, KMeansResult, DBSCAN, DBSCANResult, AgglomerativeClustering, Linkage};
-pub use classification::{LogisticRegression, KNNClassifier, Perceptron, GaussianNB, AdaBoost, NearestCentroid};
-pub use neural::{MLP, DenseLayer, Activation, TrainingResult, AdamParams};
-
+pub use classification::{
+    AdaBoost, GaussianNB, KNNClassifier, LogisticRegression, NearestCentroid, Perceptron,
+};
+pub use clustering::{
+    AgglomerativeClustering, DBSCANResult, KMeans, KMeansResult, Linkage, DBSCAN,
+};
+pub use convergence::*;
+pub use linalg::{Matrix, Vector};
+pub use neural::{Activation, AdamParams, DenseLayer, TrainingResult, MLP};
+pub use regressor::*;

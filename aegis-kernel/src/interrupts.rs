@@ -7,11 +7,11 @@
 //!
 //! ═══════════════════════════════════════════════════════════════════════════════
 
-use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
-use spin::Mutex;
-use crate::state::SystemState;
-use crate::STATE_DIMENSION;
 use crate::serial_println;
+use crate::STATE_DIMENSION;
+use aegis_core::state::SystemState;
+use spin::Mutex;
+use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Global State
@@ -20,16 +20,18 @@ use crate::serial_println;
 /// Global IDT (interrupt descriptor table)
 static IDT: spin::Lazy<InterruptDescriptorTable> = spin::Lazy::new(|| {
     let mut idt = InterruptDescriptorTable::new();
-    
+
     idt.breakpoint.set_handler_fn(breakpoint_handler);
     idt.double_fault.set_handler_fn(double_fault_handler);
-    
+
     idt
 });
 
 /// Global system state (updated by interrupt handlers)
-static CURRENT_STATE: Mutex<SystemState<STATE_DIMENSION>> = 
-    Mutex::new(SystemState { vector: [0.0; STATE_DIMENSION], timestamp: 0 });
+static CURRENT_STATE: Mutex<SystemState<STATE_DIMENSION>> = Mutex::new(SystemState {
+    vector: [0.0; STATE_DIMENSION],
+    timestamp: 0,
+});
 
 /// IRQ counter (for rate calculation)
 static IRQ_COUNTER: spin::Mutex<u64> = spin::Mutex::new(0);
@@ -64,11 +66,11 @@ pub fn update_state_component(index: usize, value: f64) {
 fn record_irq() {
     let mut counter = IRQ_COUNTER.lock();
     *counter += 1;
-    
+
     // Update IRQ rate in state vector (dimension 1)
     let mut state = CURRENT_STATE.lock();
     state.vector[1] = *counter as f64 / 1000.0; // Normalize
-    
+
     let mut ts = TIMESTAMP.lock();
     *ts += 1; // Simplified timestamp increment
     state.timestamp = *ts;
@@ -85,12 +87,12 @@ extern "x86-interrupt" fn breakpoint_handler(stack_frame: InterruptStackFrame) {
 }
 
 extern "x86-interrupt" fn double_fault_handler(
-    stack_frame: InterruptStackFrame, 
-    _error_code: u64
+    stack_frame: InterruptStackFrame,
+    _error_code: u64,
 ) -> ! {
     serial_println!("[FATAL] DOUBLE FAULT");
     serial_println!("{:#?}", stack_frame);
-    
+
     loop {
         x86_64::instructions::hlt();
     }
@@ -103,7 +105,7 @@ extern "x86-interrupt" fn double_fault_handler(
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_state_update() {
         update_state_component(0, 0.5);

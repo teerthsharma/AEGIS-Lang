@@ -10,12 +10,12 @@
 //! 3. If still failing, escalate to RBF
 //! 4. Continue until topological convergence
 //! 5. Answer emerges when topology stabilizes
-//! ═══════════════════════════════════════════════════════════════════════════════
+//!    ═══════════════════════════════════════════════════════════════════════════════
 
 #![allow(dead_code)]
 
-use crate::ml::regressor::{ManifoldRegressor, ModelType, Coefficients};
-use crate::ml::convergence::{ConvergenceDetector, ResidualAnalyzer, BettiNumbers, Answer};
+use crate::ml::convergence::{Answer, BettiNumbers, ConvergenceDetector, ResidualAnalyzer};
+use crate::ml::regressor::{Coefficients, ManifoldRegressor, ModelType};
 use heapless::Vec as HVec;
 
 /// Maximum benchmark iterations
@@ -107,7 +107,7 @@ impl<const D: usize> EscalatingBenchmark<D> {
     pub fn new(config: BenchmarkConfig) -> Self {
         let epsilon = config.epsilon;
         let window = config.stability_window;
-        
+
         Self {
             config,
             regressor: ManifoldRegressor::new(ModelType::Linear),
@@ -120,13 +120,13 @@ impl<const D: usize> EscalatingBenchmark<D> {
             targets: HVec::new(),
         }
     }
-    
+
     /// Add training data
     pub fn add_data(&mut self, point: [f64; D], target: f64) {
         self.regressor.add_point(point, target);
         let _ = self.targets.push(target);
     }
-    
+
     /// Run the escalating benchmark
     pub fn run(&mut self) -> BenchmarkResult {
         self.epoch = 0;
@@ -134,20 +134,20 @@ impl<const D: usize> EscalatingBenchmark<D> {
         self.escalations = 0;
         self.best_error = f64::MAX;
         self.detector.reset();
-        
+
         while self.epoch < self.config.max_epochs {
             // Fit current model
             let error = self.regressor.fit();
-            
+
             // Compute residuals and topology
             let residuals = self.compute_residuals();
             self.residuals.set_residuals(&residuals);
             let betti = self.residuals.compute_betti();
             let drift = self.residuals.compute_drift();
-            
+
             // Record metrics
             self.detector.record_epoch(betti, drift, error);
-            
+
             // Update best error
             if error < self.best_error {
                 self.best_error = error;
@@ -155,30 +155,30 @@ impl<const D: usize> EscalatingBenchmark<D> {
             } else {
                 self.patience_counter += 1;
             }
-            
+
             // Check convergence
             if self.detector.is_converged() {
                 return self.create_result(true);
             }
-            
+
             // Check if should escalate
-            if self.config.auto_escalate && 
-               self.patience_counter >= self.config.escalation_patience {
+            if self.config.auto_escalate && self.patience_counter >= self.config.escalation_patience
+            {
                 self.escalate();
             }
-            
+
             self.epoch += 1;
         }
-        
+
         // Max epochs reached - check if we're close enough
         let close_enough = self.detector.convergence_score() > 0.8;
         self.create_result(close_enough)
     }
-    
+
     /// Compute residuals from current fit
     fn compute_residuals(&self) -> HVec<f64, 256> {
         let mut residuals = HVec::new();
-        
+
         // We need to get predictions - this is a simplified version
         // In full implementation, we'd iterate over training points
         for (i, &target) in self.targets.iter().enumerate() {
@@ -187,30 +187,37 @@ impl<const D: usize> EscalatingBenchmark<D> {
             let pred = self.regressor.coefficients().eval_polynomial(x);
             let _ = residuals.push(target - pred);
         }
-        
+
         residuals
     }
-    
+
     /// Escalate to more complex model
     fn escalate(&mut self) {
         self.regressor.upgrade_model();
         self.escalations += 1;
         self.patience_counter = 0;
     }
-    
+
     /// Create final result
     fn create_result(&self, converged: bool) -> BenchmarkResult {
         let mut coeffs = [0.0f64; 8];
-        for (i, &v) in self.regressor.coefficients().values.iter().enumerate().take(8) {
+        for (i, &v) in self
+            .regressor
+            .coefficients()
+            .values
+            .iter()
+            .enumerate()
+            .take(8)
+        {
             coeffs[i] = v;
         }
-        
+
         let answer = if converged {
             Answer::from_detector(&self.detector, coeffs)
         } else {
             None
         };
-        
+
         BenchmarkResult {
             converged,
             final_model: self.regressor.model(),
@@ -222,17 +229,17 @@ impl<const D: usize> EscalatingBenchmark<D> {
             answer,
         }
     }
-    
+
     /// Get current model type
     pub fn current_model(&self) -> ModelType {
         self.regressor.model()
     }
-    
+
     /// Get current epoch
     pub fn epoch(&self) -> u32 {
         self.epoch
     }
-    
+
     /// Get convergence score
     pub fn convergence_score(&self) -> f64 {
         self.detector.convergence_score()
@@ -246,7 +253,7 @@ impl<const D: usize> EscalatingBenchmark<D> {
 /// Generate test function data for benchmarking
 pub fn generate_test_function(func: TestFunction, n_points: usize) -> HVec<(f64, f64), 256> {
     let mut data = HVec::new();
-    
+
     for i in 0..n_points.min(256) {
         let x = (i as f64 / n_points as f64) * 2.0 * core::f64::consts::PI;
         let y = match func {
@@ -254,11 +261,17 @@ pub fn generate_test_function(func: TestFunction, n_points: usize) -> HVec<(f64,
             TestFunction::Polynomial => 0.5 * x * x - 2.0 * x + 1.0,
             TestFunction::Exponential => libm::exp(-x / 2.0),
             TestFunction::Mixture => libm::sin(x) * libm::exp(-x / 4.0),
-            TestFunction::Step => if x < core::f64::consts::PI { 1.0 } else { -1.0 },
+            TestFunction::Step => {
+                if x < core::f64::consts::PI {
+                    1.0
+                } else {
+                    -1.0
+                }
+            }
         };
         let _ = data.push((x, y));
     }
-    
+
     data
 }
 

@@ -28,31 +28,27 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-#[cfg(not(feature = "std"))]
-use alloc::{string::String, vec::Vec, boxed::Box, format, vec};
 
-#[cfg(feature = "std")]
-use std::{string::String, vec::Vec, boxed::Box, format, vec};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Module Declarations
 // ═══════════════════════════════════════════════════════════════════════════════
 
-pub mod lexer;
-pub mod ast;
-pub mod parser;
-pub mod interpreter;
 pub mod ascii_render;
+pub mod ast;
+pub mod interpreter;
+pub mod lexer;
+pub mod parser;
 pub mod webgl_export;
 
 // Re-exports for convenience
-pub use lexer::{Lexer, Token, TokenKind};
 pub use ast::*;
-pub use parser::Parser;
 pub use interpreter::Interpreter;
+pub use lexer::{Lexer, Token, TokenKind};
+pub use parser::Parser;
 
 // Re-export core types that the interpreter uses
 pub use aegis_core::{
-    ManifoldPoint, TimeDelayEmbedder, SparseAttentionGraph,
-    BlockMetadata, HierarchicalBlockTree, DriftDetector,
+    BlockMetadata, DriftDetector, HierarchicalBlockTree, ManifoldPoint, SparseAttentionGraph,
+    TimeDelayEmbedder,
 };

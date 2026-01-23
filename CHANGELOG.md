@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - WASM compilation target
 - Language server protocol (LSP) for IDE support
 
+### Added
+- **Convolutional Layers** (`src/ml/convolution.rs`)
+  - `Conv2D` implementation with custom stride/padding
+  - Kaiming/He initialization
+  - `no_std` compatible const-generic arrays
+
 ---
 
 ## [0.1.0-alpha] - 2026-01-22

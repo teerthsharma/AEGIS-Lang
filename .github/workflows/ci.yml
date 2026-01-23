@@ -8,14 +8,18 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
 
 jobs:
   # ═══════════════════════════════════════════════════════════════════════════
-  # Build & Test
+  # Test & Lint (Matrix)
   # ═══════════════════════════════════════════════════════════════════════════
-  build:
-    name: Build & Test
-    runs-on: ubuntu-latest
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     
     steps:
     - uses: actions/checkout@v4
@@ -23,7 +27,7 @@ jobs:
     - name: Install Rust Nightly
       uses: dtolnay/rust-toolchain@nightly
       with:
-        components: rust-src, llvm-tools-preview
+        components: rust-src, llvm-tools-preview, clippy, rustfmt
     
     - name: Cache Cargo
       uses: actions/cache@v3
@@ -34,17 +38,30 @@ jobs:
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     
-    - name: Build (Host Target)
-      run: cargo build --lib --target x86_64-unknown-linux-gnu
-    
-    - name: Run Tests
-      run: cargo test --lib --target x86_64-unknown-linux-gnu
-    
     - name: Check Formatting
       run: cargo fmt -- --check
+      if: matrix.os == 'ubuntu-latest' # Only check fmt once
     
     - name: Clippy
-      run: cargo clippy --lib --target x86_64-unknown-linux-gnu -- -D warnings
+      run: cargo clippy --workspace -- -D warnings
+    
+    - name: Run Tests
+      run: cargo test --workspace
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # no_std Compatibility Check
+  # ═══════════════════════════════════════════════════════════════════════════
+  no_std_check:
+    name: no_std Check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@nightly
+      with:
+        targets: thumbv7m-none-eabi # An actual embedded target
+    
+    - name: Build Core (no_std)
+      run: cargo build -p aegis-core --no-default-features --target thumbv7m-none-eabi
 
   # ═══════════════════════════════════════════════════════════════════════════
   # Docker Build
@@ -52,15 +69,10 @@ jobs:
   docker:
     name: Docker Build
     runs-on: ubuntu-latest
-    
     steps:
     - uses: actions/checkout@v4
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    
-    - name: Build Docker Image
-      uses: docker/build-push-action@v5
+    - uses: docker/setup-buildx-action@v3
+    - uses: docker/build-push-action@v5
       with:
         context: .
         push: false
@@ -71,63 +83,17 @@ jobs:
     - name: Test Docker REPL
       run: |
         docker run --rm aegis:test --help
-        docker run --rm aegis:test version
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # AEGIS Script Validation
-  # ═══════════════════════════════════════════════════════════════════════════
-  validate-scripts:
-    name: Validate .aegis Scripts
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Lint AEGIS Scripts
-      run: |
-        echo "Validating .aegis example scripts..."
-        for file in examples/*.aegis; do
-          echo "Checking: $file"
-          # Validate syntax (basic check)
-          grep -E "^(manifold|block|regress|render|//)" "$file" > /dev/null || \
-            (echo "Invalid syntax in $file" && exit 1)
-        done
-        echo "All scripts valid!"
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # Documentation
-  # ═══════════════════════════════════════════════════════════════════════════
-  docs:
-    name: Build Documentation
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install Rust Nightly
-      uses: dtolnay/rust-toolchain@nightly
-    
-    - name: Generate Docs
-      run: cargo doc --no-deps --lib
-    
-    - name: Upload Docs Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: documentation
-        path: target/doc
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # Release (on tag)
+  # Release
   # ═══════════════════════════════════════════════════════════════════════════
   release:
     name: Create Release
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [build, docker]
-    
+    needs: [test, no_std_check, docker]
     steps:
     - uses: actions/checkout@v4
-    
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:

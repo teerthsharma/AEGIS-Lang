@@ -8,8 +8,8 @@
 
 #![allow(dead_code)]
 
-use libm::{sqrt, exp, log, fabs};
-use heapless::Vec as HVec;
+// use heapless::Vec as HVec;
+use libm::{exp, fabs, log, sqrt};
 
 /// Maximum classes
 const MAX_CLASSES: usize = 16;
@@ -50,87 +50,93 @@ impl LogisticRegression {
             tol: 1e-4,
         }
     }
-    
+
     pub fn with_lr(mut self, lr: f64) -> Self {
         self.learning_rate = lr;
         self
     }
-    
+
     pub fn with_max_iter(mut self, max_iter: usize) -> Self {
         self.max_iter = max_iter;
         self
     }
-    
+
     /// Sigmoid function
     fn sigmoid(z: f64) -> f64 {
-        1.0 / (1.0 + exp(-z.max(-500.0).min(500.0)))
+        1.0 / (1.0 + exp(-z.clamp(-500.0, 500.0)))
     }
-    
+
     /// Fit classifier to binary labels
     pub fn fit(&mut self, x: &[[f64; MAX_FEATURES]], y: &[f64], n: usize) -> f64 {
         let n = n.min(MAX_POINTS);
-        if n == 0 { return 0.0; }
-        
+        if n == 0 {
+            return 0.0;
+        }
+
         let mut prev_loss = f64::MAX;
-        
+
         for _ in 0..self.max_iter {
             let mut grad_w = [0.0; MAX_FEATURES];
             let mut grad_b = 0.0;
             let mut loss = 0.0;
-            
+
             for i in 0..n {
                 let z = self.linear(&x[i]);
                 let p = Self::sigmoid(z);
                 let error = p - y[i];
-                
+
                 // Gradient accumulation
-                for j in 0..self.n_features {
-                    grad_w[j] += error * x[i][j];
+                for (j, w) in grad_w.iter_mut().enumerate().take(self.n_features) {
+                    *w += error * x[i][j];
                 }
                 grad_b += error;
-                
+
                 // Binary cross-entropy loss
-                let p_clipped = p.max(1e-7).min(1.0 - 1e-7);
+                let p_clipped = p.clamp(1e-7, 1.0 - 1e-7);
                 loss -= y[i] * log(p_clipped) + (1.0 - y[i]) * log(1.0 - p_clipped);
             }
-            
+
             // Update weights
-            for j in 0..self.n_features {
-                self.weights[j] -= self.learning_rate * grad_w[j] / n as f64;
+            for (j, w) in self.weights.iter_mut().enumerate().take(self.n_features) {
+                *w -= self.learning_rate * grad_w[j] / n as f64;
             }
             self.bias -= self.learning_rate * grad_b / n as f64;
-            
+
             loss /= n as f64;
-            
+
             // Check convergence
             if fabs(prev_loss - loss) < self.tol {
                 return loss;
             }
             prev_loss = loss;
         }
-        
+
         prev_loss
     }
-    
+
     /// Linear combination
     fn linear(&self, x: &[f64; MAX_FEATURES]) -> f64 {
         let mut z = self.bias;
-        for j in 0..self.n_features {
-            z += self.weights[j] * x[j];
+        for (j, w) in self.weights.iter().enumerate().take(self.n_features) {
+            z += *w * x[j];
         }
         z
     }
-    
+
     /// Predict probability
     pub fn predict_proba(&self, x: &[f64; MAX_FEATURES]) -> f64 {
         Self::sigmoid(self.linear(x))
     }
-    
+
     /// Predict class (0 or 1)
     pub fn predict(&self, x: &[f64; MAX_FEATURES]) -> u32 {
-        if self.predict_proba(x) >= 0.5 { 1 } else { 0 }
+        if self.predict_proba(x) >= 0.5 {
+            1
+        } else {
+            0
+        }
     }
-    
+
     /// Predict batch
     pub fn predict_batch(&self, x: &[[f64; MAX_FEATURES]], n: usize) -> [u32; MAX_POINTS] {
         let mut preds = [0u32; MAX_POINTS];
@@ -167,28 +173,28 @@ impl<const D: usize> KNNClassifier<D> {
             k: k.max(1),
         }
     }
-    
+
     /// Fit (store) training data
     pub fn fit(&mut self, x: &[[f64; D]], y: &[u32], n: usize) {
         let n = n.min(MAX_POINTS);
         self.n_train = n;
-        
-        for i in 0..n {
-            self.x_train[i] = x[i];
-            self.y_train[i] = y[i];
-        }
+
+        self.x_train[..n].copy_from_slice(&x[..n]);
+        self.y_train[..n].copy_from_slice(&y[..n]);
     }
-    
+
     /// Predict single sample
     pub fn predict(&self, x: &[f64; D]) -> u32 {
-        if self.n_train == 0 { return 0; }
-        
+        if self.n_train == 0 {
+            return 0;
+        }
+
         // Find k nearest neighbors
         let mut distances = [(f64::MAX, 0u32); MAX_POINTS];
-        for i in 0..self.n_train {
-            distances[i] = (self.distance(x, &self.x_train[i]), self.y_train[i]);
+        for (i, dist) in distances.iter_mut().enumerate().take(self.n_train) {
+            *dist = (self.distance(x, &self.x_train[i]), self.y_train[i]);
         }
-        
+
         // Sort by distance (simple bubble sort for small k)
         for i in 0..self.k.min(self.n_train) {
             for j in (i + 1)..self.n_train {
@@ -197,29 +203,29 @@ impl<const D: usize> KNNClassifier<D> {
                 }
             }
         }
-        
+
         // Vote among k nearest
         let mut votes = [0u32; MAX_CLASSES];
-        for i in 0..self.k.min(self.n_train) {
-            let label = distances[i].1 as usize;
+        for dist in distances.iter().take(self.k.min(self.n_train)) {
+            let label = dist.1 as usize;
             if label < MAX_CLASSES {
                 votes[label] += 1;
             }
         }
-        
+
         // Return class with most votes
         let mut best_class = 0;
         let mut best_count = 0;
-        for c in 0..MAX_CLASSES {
-            if votes[c] > best_count {
-                best_count = votes[c];
+        for (c, count) in votes.iter().enumerate().take(MAX_CLASSES) {
+            if *count > best_count {
+                best_count = *count;
                 best_class = c as u32;
             }
         }
-        
+
         best_class
     }
-    
+
     /// Euclidean distance
     fn distance(&self, a: &[f64; D], b: &[f64; D]) -> f64 {
         let mut sum = 0.0;
@@ -257,48 +263,58 @@ impl Perceptron {
             learning_rate: 1.0,
         }
     }
-    
+
     pub fn with_lr(mut self, lr: f64) -> Self {
         self.learning_rate = lr;
         self
     }
-    
+
     /// Train with seal-loop style convergence
-    pub fn fit(&mut self, x: &[[f64; MAX_FEATURES]], y: &[i32], n: usize, max_epochs: usize) -> u32 {
+    pub fn fit(
+        &mut self,
+        x: &[[f64; MAX_FEATURES]],
+        y: &[i32],
+        n: usize,
+        max_epochs: usize,
+    ) -> u32 {
         let n = n.min(MAX_POINTS);
-        
+
         for epoch in 0..max_epochs {
             let mut errors = 0u32;
-            
+
             for i in 0..n {
                 let pred = self.predict(&x[i]);
                 let error = y[i] - pred;
-                
+
                 if error != 0 {
                     errors += 1;
-                    for j in 0..self.n_features {
-                        self.weights[j] += self.learning_rate * error as f64 * x[i][j];
+                    for (j, w) in self.weights.iter_mut().enumerate().take(self.n_features) {
+                        *w += self.learning_rate * error as f64 * x[i][j];
                     }
                     self.bias += self.learning_rate * error as f64;
                 }
             }
-            
+
             // Converged if no errors
             if errors == 0 {
                 return epoch as u32;
             }
         }
-        
+
         max_epochs as u32
     }
-    
+
     /// Predict (-1 or +1)
     pub fn predict(&self, x: &[f64; MAX_FEATURES]) -> i32 {
         let mut z = self.bias;
-        for j in 0..self.n_features {
-            z += self.weights[j] * x[j];
+        for (j, w) in self.weights.iter().enumerate().take(self.n_features) {
+            z += *w * x[j];
         }
-        if z >= 0.0 { 1 } else { -1 }
+        if z >= 0.0 {
+            1
+        } else {
+            -1
+        }
     }
 }
 
@@ -331,18 +347,20 @@ impl GaussianNB {
             n_features: 0,
         }
     }
-    
+
     /// Fit to data
     pub fn fit(&mut self, x: &[[f64; MAX_FEATURES]], y: &[u32], n: usize, n_features: usize) {
         let n = n.min(MAX_POINTS);
         self.n_features = n_features.min(MAX_FEATURES);
-        
-        if n == 0 { return; }
-        
+
+        if n == 0 {
+            return;
+        }
+
         // Count classes
         let mut class_counts = [0usize; MAX_CLASSES];
-        for i in 0..n {
-            let c = y[i] as usize;
+        for l in y.iter().take(n) {
+            let c = *l as usize;
             if c < MAX_CLASSES {
                 class_counts[c] += 1;
                 if c >= self.n_classes {
@@ -350,29 +368,32 @@ impl GaussianNB {
                 }
             }
         }
-        
+
         // Compute means
-        for c in 0..self.n_classes {
-            if class_counts[c] == 0 { continue; }
-            
-            self.priors[c] = class_counts[c] as f64 / n as f64;
-            
-            for j in 0..self.n_features {
+        for (c, count) in class_counts.iter().enumerate().take(self.n_classes) {
+            if *count == 0 {
+                continue;
+            }
+            self.priors[c] = (*count as f64) / (n as f64);
+
+            for (j, u) in self.means[c].iter_mut().enumerate().take(self.n_features) {
                 let mut sum = 0.0;
                 for i in 0..n {
                     if y[i] as usize == c {
                         sum += x[i][j];
                     }
                 }
-                self.means[c][j] = sum / class_counts[c] as f64;
+                *u = sum / class_counts[c] as f64;
             }
         }
-        
+
         // Compute variances
-        for c in 0..self.n_classes {
-            if class_counts[c] == 0 { continue; }
-            
-            for j in 0..self.n_features {
+        for (c, count) in class_counts.iter().enumerate().take(self.n_classes) {
+            if *count == 0 {
+                continue;
+            }
+
+            for (j, v) in self.vars[c].iter_mut().enumerate().take(self.n_features) {
                 let mut sum = 0.0;
                 for i in 0..n {
                     if y[i] as usize == c {
@@ -380,34 +401,36 @@ impl GaussianNB {
                         sum += diff * diff;
                     }
                 }
-                self.vars[c][j] = (sum / class_counts[c] as f64).max(1e-9);
+                *v = (sum / class_counts[c] as f64).max(1e-9);
             }
         }
     }
-    
+
     /// Predict class
     pub fn predict(&self, x: &[f64; MAX_FEATURES]) -> u32 {
         let mut best_class = 0;
         let mut best_log_prob = f64::NEG_INFINITY;
-        
+
         for c in 0..self.n_classes {
-            if self.priors[c] <= 0.0 { continue; }
-            
+            if self.priors[c] <= 0.0 {
+                continue;
+            }
+
             let mut log_prob = log(self.priors[c]);
-            
-            for j in 0..self.n_features {
+
+            for (j, val) in x.iter().enumerate().take(self.n_features) {
                 // Log of Gaussian PDF
-                let diff = x[j] - self.means[c][j];
-                log_prob -= 0.5 * log(2.0 * 3.14159265359 * self.vars[c][j]);
+                let diff = val - self.means[c][j];
+                log_prob -= 0.5 * log(2.0 * core::f64::consts::PI * self.vars[c][j]);
                 log_prob -= 0.5 * diff * diff / self.vars[c][j];
             }
-            
+
             if log_prob > best_log_prob {
                 best_log_prob = log_prob;
                 best_class = c as u32;
             }
         }
-        
+
         best_class
     }
 }
@@ -444,29 +467,41 @@ impl DecisionStump {
             error: 1.0,
         }
     }
-    
+
     /// Fit stump to weighted data
-    pub fn fit(&mut self, x: &[[f64; MAX_FEATURES]], y: &[i32], weights: &[f64], n: usize, n_features: usize) {
+    pub fn fit(
+        &mut self,
+        x: &[[f64; MAX_FEATURES]],
+        y: &[i32],
+        weights: &[f64],
+        n: usize,
+        n_features: usize,
+    ) {
         let n = n.min(MAX_POINTS);
         let n_features = n_features.min(MAX_FEATURES);
-        
+
         self.error = f64::MAX;
-        
+
+        #[allow(clippy::needless_range_loop)]
         for f in 0..n_features {
             // Find unique thresholds
             for i in 0..n {
                 let thresh = x[i][f];
-                
+
                 for polarity in [-1i32, 1] {
                     let mut err = 0.0;
-                    
+
                     for j in 0..n {
-                        let pred = if polarity as f64 * (x[j][f] - thresh) >= 0.0 { 1 } else { -1 };
+                        let pred = if polarity as f64 * (x[j][f] - thresh) >= 0.0 {
+                            1
+                        } else {
+                            -1
+                        };
                         if pred != y[j] {
                             err += weights[j];
                         }
                     }
-                    
+
                     if err < self.error {
                         self.error = err;
                         self.feature = f;
@@ -477,10 +512,14 @@ impl DecisionStump {
             }
         }
     }
-    
+
     /// Predict
     pub fn predict(&self, x: &[f64; MAX_FEATURES]) -> i32 {
-        if self.polarity as f64 * (x[self.feature] - self.threshold) >= 0.0 { 1 } else { -1 }
+        if self.polarity as f64 * (x[self.feature] - self.threshold) >= 0.0 {
+            1
+        } else {
+            -1
+        }
     }
 }
 
@@ -513,45 +552,56 @@ impl AdaBoost {
             n_stumps: 0,
         }
     }
-    
+
     /// Fit AdaBoost
-    pub fn fit(&mut self, x: &[[f64; MAX_FEATURES]], y: &[i32], n: usize, n_features: usize, n_estimators: usize) {
+    pub fn fit(
+        &mut self,
+        x: &[[f64; MAX_FEATURES]],
+        y: &[i32],
+        n: usize,
+        n_features: usize,
+        n_estimators: usize,
+    ) {
         let n = n.min(MAX_POINTS);
         self.n_stumps = n_estimators.min(32);
-        
+
         // Initialize weights
         let mut weights = [1.0 / n as f64; MAX_POINTS];
-        
+
         for t in 0..self.n_stumps {
             // Fit weak learner
             self.stumps[t].fit(x, y, &weights, n, n_features);
-            
+
             // Compute alpha
-            let err = self.stumps[t].error.max(1e-10).min(1.0 - 1e-10);
+            let err = self.stumps[t].error.clamp(1e-10, 1.0 - 1e-10);
             self.alphas[t] = 0.5 * log((1.0 - err) / err);
-            
+
             // Update weights
             let mut weight_sum = 0.0;
-            for i in 0..n {
+            for (i, w) in weights.iter_mut().enumerate().take(n) {
                 let pred = self.stumps[t].predict(&x[i]);
-                weights[i] *= exp(-self.alphas[t] * y[i] as f64 * pred as f64);
-                weight_sum += weights[i];
+                *w *= exp(-self.alphas[t] * y[i] as f64 * pred as f64);
+                weight_sum += *w;
             }
-            
+
             // Normalize
-            for i in 0..n {
-                weights[i] /= weight_sum;
+            for w in weights.iter_mut().take(n) {
+                *w /= weight_sum;
             }
         }
     }
-    
+
     /// Predict
     pub fn predict(&self, x: &[f64; MAX_FEATURES]) -> i32 {
         let mut sum = 0.0;
         for t in 0..self.n_stumps {
             sum += self.alphas[t] * self.stumps[t].predict(x) as f64;
         }
-        if sum >= 0.0 { 1 } else { -1 }
+        if sum >= 0.0 {
+            1
+        } else {
+            -1
+        }
     }
 }
 
@@ -581,19 +631,21 @@ impl<const D: usize> NearestCentroid<D> {
             n_classes: 0,
         }
     }
-    
+
     /// Fit by computing class centroids
     pub fn fit(&mut self, x: &[[f64; D]], y: &[u32], n: usize) {
         let n = n.min(MAX_POINTS);
-        
+
         // Count and sum per class
         let mut counts = [0usize; MAX_CLASSES];
         let mut sums = [[0.0f64; D]; MAX_CLASSES];
-        
+
         for i in 0..n {
             let c = y[i] as usize;
-            if c >= MAX_CLASSES { continue; }
-            
+            if c >= MAX_CLASSES {
+                continue;
+            }
+
             counts[c] += 1;
             for d in 0..D {
                 sums[c][d] += x[i][d];
@@ -602,22 +654,22 @@ impl<const D: usize> NearestCentroid<D> {
                 self.n_classes = c + 1;
             }
         }
-        
+
         // Compute centroids
         for c in 0..self.n_classes {
             if counts[c] > 0 {
-                for d in 0..D {
-                    self.centroids[c][d] = sums[c][d] / counts[c] as f64;
+                for (d, val) in self.centroids[c].iter_mut().enumerate().take(D) {
+                    *val = sums[c][d] / counts[c] as f64;
                 }
             }
         }
     }
-    
+
     /// Predict by nearest centroid
     pub fn predict(&self, x: &[f64; D]) -> u32 {
         let mut best_class = 0;
         let mut best_dist = f64::MAX;
-        
+
         for c in 0..self.n_classes {
             let dist = self.distance(x, &self.centroids[c]);
             if dist < best_dist {
@@ -625,10 +677,10 @@ impl<const D: usize> NearestCentroid<D> {
                 best_class = c as u32;
             }
         }
-        
+
         best_class
     }
-    
+
     /// Get centroid for class
     pub fn get_centroid(&self, class: usize) -> Option<&[f64; D]> {
         if class < self.n_classes {
@@ -637,7 +689,7 @@ impl<const D: usize> NearestCentroid<D> {
             None
         }
     }
-    
+
     fn distance(&self, a: &[f64; D], b: &[f64; D]) -> f64 {
         let mut sum = 0.0;
         for i in 0..D {
@@ -661,39 +713,63 @@ impl<const D: usize> Default for NearestCentroid<D> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_logistic_regression() {
         // Simple linearly separable data
         let x = [
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            [2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            [3.0, 3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            ],
+            [
+                1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            ],
+            [
+                2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            ],
+            [
+                3.0, 3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            ],
         ];
         let y = [0.0, 0.0, 1.0, 1.0];
-        
+
         let mut lr = LogisticRegression::new(2).with_lr(0.5).with_max_iter(100);
         lr.fit(&x, &y, 4);
-        
+
         // Should classify correctly
         assert_eq!(lr.predict(&x[0]), 0);
         assert_eq!(lr.predict(&x[3]), 1);
     }
-    
+
     #[test]
     fn test_perceptron() {
         let x = [
-            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            [10.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            [11.0, 11.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            ],
+            [
+                1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            ],
+            [
+                10.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            ],
+            [
+                11.0, 11.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            ],
         ];
         let y = [-1, -1, 1, 1];
-        
+
         let mut p = Perceptron::new(2);
         let epochs = p.fit(&x, &y, 4, 100);
-        
+
         // Should converge
         assert!(epochs < 100);
     }

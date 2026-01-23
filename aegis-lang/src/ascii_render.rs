@@ -48,54 +48,54 @@ impl AsciiRenderer {
     /// Points are [x, y, z] arrays
     pub fn render_scatter(&self, points: &[[f64; 3]]) -> String<4096> {
         let mut canvas = [[' '; 60]; 20];
-        
+
         if points.is_empty() {
             return self.canvas_to_string(&canvas);
         }
-        
+
         // Find bounds
         let (min_x, max_x, min_y, max_y) = self.find_bounds(points);
         let range_x = (max_x - min_x).max(0.001);
         let range_y = (max_y - min_y).max(0.001);
-        
+
         // Project and render points
         for point in points {
             let x = (((point[0] - min_x) / range_x) * (self.width - 1) as f64) as usize;
             let y = (((point[1] - min_y) / range_y) * (self.height - 1) as f64) as usize;
-            
+
             if x < self.width && y < self.height {
                 canvas[self.height - 1 - y][x] = '*';
             }
         }
-        
+
         self.canvas_to_string(&canvas)
     }
 
     /// Render density heatmap
     pub fn render_density(&self, points: &[[f64; 3]]) -> String<4096> {
         let mut density = [[0u8; 60]; 20];
-        
+
         if points.is_empty() {
             return self.canvas_to_string(&[[' '; 60]; 20]);
         }
-        
+
         let (min_x, max_x, min_y, max_y) = self.find_bounds(points);
         let range_x = (max_x - min_x).max(0.001);
         let range_y = (max_y - min_y).max(0.001);
-        
+
         // Accumulate density
         for point in points {
             let x = (((point[0] - min_x) / range_x) * (self.width - 1) as f64) as usize;
             let y = (((point[1] - min_y) / range_y) * (self.height - 1) as f64) as usize;
-            
+
             if x < self.width && y < self.height {
                 density[self.height - 1 - y][x] = density[self.height - 1 - y][x].saturating_add(1);
             }
         }
-        
+
         // Find max density
         let max_d = density.iter().flatten().copied().max().unwrap_or(1);
-        
+
         // Render to characters
         let mut canvas = [[' '; 60]; 20];
         for (y, row) in density.iter().enumerate() {
@@ -107,7 +107,7 @@ impl AsciiRenderer {
                 }
             }
         }
-        
+
         self.canvas_to_string(&canvas)
     }
 
@@ -116,39 +116,51 @@ impl AsciiRenderer {
         let mut max_x = f64::MIN;
         let mut min_y = f64::MAX;
         let mut max_y = f64::MIN;
-        
+
         for p in points {
-            if p[0] < min_x { min_x = p[0]; }
-            if p[0] > max_x { max_x = p[0]; }
-            if p[1] < min_y { min_y = p[1]; }
-            if p[1] > max_y { max_y = p[1]; }
+            if p[0] < min_x {
+                min_x = p[0];
+            }
+            if p[0] > max_x {
+                max_x = p[0];
+            }
+            if p[1] < min_y {
+                min_y = p[1];
+            }
+            if p[1] > max_y {
+                max_y = p[1];
+            }
         }
-        
+
         (min_x, max_x, min_y, max_y)
     }
 
     fn canvas_to_string(&self, canvas: &[[char; 60]; 20]) -> String<4096> {
         let mut output = String::new();
-        
+
         // Top border
         let _ = output.push_str("+");
-        for _ in 0..self.width { let _ = output.push('-'); }
+        for _ in 0..self.width {
+            let _ = output.push('-');
+        }
         let _ = output.push_str("+\n");
-        
+
         // Content
-        for y in 0..self.height {
+        for row in canvas.iter().take(self.height) {
             let _ = output.push('|');
-            for x in 0..self.width {
-                let _ = output.push(canvas[y][x]);
+            for &char in row.iter().take(self.width) {
+                let _ = output.push(char);
             }
             let _ = output.push_str("|\n");
         }
-        
-        // Bottom border  
+
+        // Bottom border
         let _ = output.push_str("+");
-        for _ in 0..self.width { let _ = output.push('-'); }
+        for _ in 0..self.width {
+            let _ = output.push('-');
+        }
         let _ = output.push_str("+\n");
-        
+
         output
     }
 }

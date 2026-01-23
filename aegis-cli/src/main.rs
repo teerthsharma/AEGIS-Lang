@@ -11,16 +11,16 @@
 //!
 //! ═══════════════════════════════════════════════════════════════════════════════
 
-use clap::{Parser, Subcommand};
+use clap::{Parser as ClapParser, Subcommand};
 use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
 use std::fs;
 use std::path::PathBuf;
 
-use aegis_lang::{Lexer, Parser as AegisParser, Interpreter};
+use aegis_lang::{Interpreter, Parser};
 
 /// AEGIS - The Universal Programming Language
-#[derive(Parser)]
+#[derive(ClapParser)]
 #[command(name = "aegis")]
 #[command(author = "AEGIS Research Team")]
 #[command(version = "0.1.0")]
@@ -34,14 +34,14 @@ struct Cli {
 enum Commands {
     /// Start interactive REPL
     Repl,
-    
+
     /// Run an AEGIS script
     Run {
         /// Path to .aegis file
         #[arg(value_name = "FILE")]
         file: PathBuf,
     },
-    
+
     /// Check syntax of an AEGIS script
     Check {
         /// Path to .aegis file
@@ -84,24 +84,22 @@ fn run_repl() {
         match readline {
             Ok(line) => {
                 let trimmed = line.trim();
-                
+
                 if trimmed == "exit" || trimmed == "quit" {
                     println!("Goodbye! 🦭");
                     break;
                 }
-                
+
                 if trimmed.is_empty() {
                     continue;
                 }
-                
+
                 let _ = rl.add_history_entry(&line);
-                
+
                 // Parse and execute
                 match execute_line(&mut interpreter, trimmed) {
                     Ok(result) => {
-                        if !result.is_empty() {
-                            println!("{}", result);
-                        }
+                        println!("{}", result);
                     }
                     Err(e) => {
                         eprintln!("Error: {}", e);
@@ -125,16 +123,17 @@ fn run_repl() {
 
 /// Execute a single line in the REPL
 fn execute_line(interpreter: &mut Interpreter, source: &str) -> Result<String, String> {
-    // Tokenize
-    let mut lexer = Lexer::new(source);
-    let tokens = lexer.tokenize().map_err(|e| format!("Lexer error: {:?}", e))?;
-    
-    // Parse
-    let mut parser = AegisParser::new(tokens);
-    let ast = parser.parse().map_err(|e| format!("Parse error: {:?}", e))?;
-    
-    // Execute
-    interpreter.execute(&ast).map_err(|e| format!("Runtime error: {:?}", e))
+    // Parser internally creates a lexer and tokenizes
+    let mut parser = Parser::new(source);
+    let ast = parser
+        .parse()
+        .map_err(|e| format!("Parse error: {:?}", e))?;
+
+    // Execute and format result
+    let value = interpreter
+        .execute(&ast)
+        .map_err(|e| format!("Runtime error: {}", e))?;
+    Ok(format!("{:?}", value))
 }
 
 /// Run an AEGIS script file
@@ -142,7 +141,7 @@ fn run_file(path: &PathBuf) {
     println!("═══════════════════════════════════════════════════════════════");
     println!("  🛡️ AEGIS - Running: {}", path.display());
     println!("═══════════════════════════════════════════════════════════════");
-    
+
     let source = match fs::read_to_string(path) {
         Ok(content) => content,
         Err(e) => {
@@ -150,21 +149,11 @@ fn run_file(path: &PathBuf) {
             std::process::exit(1);
         }
     };
-    
+
     let mut interpreter = Interpreter::new();
-    
-    // Tokenize
-    let mut lexer = Lexer::new(&source);
-    let tokens = match lexer.tokenize() {
-        Ok(t) => t,
-        Err(e) => {
-            eprintln!("Lexer error: {:?}", e);
-            std::process::exit(1);
-        }
-    };
-    
-    // Parse
-    let mut parser = AegisParser::new(tokens);
+
+    // Parse (parser handles tokenization internally)
+    let mut parser = Parser::new(&source);
     let ast = match parser.parse() {
         Ok(a) => a,
         Err(e) => {
@@ -172,18 +161,16 @@ fn run_file(path: &PathBuf) {
             std::process::exit(1);
         }
     };
-    
+
     // Execute
     match interpreter.execute(&ast) {
         Ok(result) => {
-            if !result.is_empty() {
-                println!("{}", result);
-            }
+            println!("{:?}", result);
             println!();
             println!("Execution complete. 🦭");
         }
         Err(e) => {
-            eprintln!("Runtime error: {:?}", e);
+            eprintln!("Runtime error: {}", e);
             std::process::exit(1);
         }
     }
@@ -192,7 +179,7 @@ fn run_file(path: &PathBuf) {
 /// Check syntax of an AEGIS script
 fn check_file(path: &PathBuf) {
     println!("Checking: {}", path.display());
-    
+
     let source = match fs::read_to_string(path) {
         Ok(content) => content,
         Err(e) => {
@@ -200,19 +187,9 @@ fn check_file(path: &PathBuf) {
             std::process::exit(1);
         }
     };
-    
-    // Tokenize
-    let mut lexer = Lexer::new(&source);
-    let tokens = match lexer.tokenize() {
-        Ok(t) => t,
-        Err(e) => {
-            eprintln!("❌ Lexer error at {:?}", e);
-            std::process::exit(1);
-        }
-    };
-    
-    // Parse
-    let mut parser = AegisParser::new(tokens);
+
+    // Parse (parser handles tokenization internally)
+    let mut parser = Parser::new(&source);
     match parser.parse() {
         Ok(_) => {
             println!("✓ Syntax OK");
