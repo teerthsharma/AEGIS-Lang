@@ -128,29 +128,31 @@ The user-facing language:
 
 ---
 
-## Language Pipeline
+## Language Pipeline: The Dual-Engine Cortex
 
-```
-Source (.aegis)
-      │
-      ▼
-┌──────────┐
-│  Lexer   │  Tokenize source text
-└────┬─────┘
-     │ Vec<Token>
-     ▼
-┌──────────┐
-│  Parser  │  Build abstract syntax tree
-└────┬─────┘
-     │ Program (AST)
-     ▼
-┌──────────────┐
-│ Interpreter  │  Execute statements
-└──────────────┘
-     │
-     ▼
-   Results
-```
+AEGIS employs a bicameral execution model, functioning like the two hemispheres of a brain:
+
+### 1. Bio-Script (Right Hemisphere)
+*   **Role:** Rapid prototyping, reflection, dynamic logic.
+*   **Implementation:** Tree-Walking Interpreter.
+*   **Architecture:**
+    ```
+    Source -> Lexer -> Parser -> AST -> Tree-Walker
+    ```
+
+### 2. Titan VM (Left Hemisphere)
+*   **Role:** High-throughput simulation, massive parallelization.
+*   **Implementation:** Stack-based Linear Bytecode VM.
+*   **Architecture:**
+    ```
+    AST -> Compiler -> Bytecode -> Titan VM Loop
+    ```
+
+### Unified Memory: The Manifold Heap
+Both engines share the **Manifold Heap**, a biologically inspired memory arena.
+*   **Entropy Regulation:** Instead of GC, we use "Mark-and-Prune".
+*   **Chebyshev Guard:** Pruning is gated by statistical safety checks ($P < 1/k^2$).
+
 
 ### Lexer Detail
 
