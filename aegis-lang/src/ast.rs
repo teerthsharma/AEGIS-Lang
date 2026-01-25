@@ -3,29 +3,47 @@
 //! ═══════════════════════════════════════════════════════════════════════════════
 //!
 //! AST nodes representing the structure of AEGIS programs.
+//! Now supporting Source Spans and Titan VM Opcodes.
 //!
-//! Core Constructs:
-//! - ManifoldDecl: 3D embedded space definition
-//! - BlockDecl: Geometric cluster extraction
-//! - RegressStmt: Non-linear regression with escalation
-//! - RenderStmt: 3D visualization directives
-//!   ═══════════════════════════════════════════════════════════════════════════════
+//! ═══════════════════════════════════════════════════════════════════════════════
 
 #![allow(dead_code)]
 
 extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
+use alloc::boxed::Box;
+
+/// Source Span for diagnostics (Line, Column, Length)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Span {
+    pub start: usize,
+    pub end: usize,
+    pub line: usize,
+    pub col: usize,
+}
+
+/// Wrapper for AST nodes to map back to Source DNA
+#[derive(Debug, Clone, PartialEq)]
+pub struct Spanned<T> {
+    pub node: T,
+    pub span: Span,
+}
+
+impl<T> Spanned<T> {
+    pub fn new(node: T, span: Span) -> Self {
+        Self { node, span }
+    }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Expression Types
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Numeric value (integer or fixed-point float)
+/// Numeric value (integer or fixed-point float) - Legacy support
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Number {
     Int(i64),
-    /// Fixed-point: value = int_part + frac_part / 1_000_000
     Float {
         int_part: i64,
         frac_part: i64,
@@ -48,33 +66,56 @@ impl Number {
 pub type Ident = String;
 
 /// Range expression: start:end
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Range {
     pub start: Number,
     pub end: Number,
 }
 
 /// Key-value pair in configuration blocks
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ConfigPair {
     pub key: Ident,
     pub value: Expr,
 }
 
-/// Expression in AEGIS
-#[derive(Debug, Clone)]
-pub enum Expr {
-    /// Numeric literal: 42, 3.14159
-    Num(Number),
+/// Binary Operators
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BinaryOp {
+    Add, Sub, Mul, Div,
+    Eq, Neq, Lt, Gt, Le, Ge,
+    And, Or,
+}
 
-    /// Boolean literal: true, false
-    Bool(bool),
+/// Unary Operators
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnaryOp {
+    Neg, Not,
+}
 
-    /// String literal: "polynomial"
-    Str(String),
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Expression Types
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// AEGIS Expression wrapped with source span
+pub type Expr = Spanned<ExprKind>;
+
+/// Expression kinds in AEGIS
+#[derive(Debug, Clone, PartialEq)]
+pub enum ExprKind {
+    /// Literal value
+    Literal(Literal),
+    
     /// Identifier: M, data, dim
     Ident(Ident),
+
+    /// Binary Operation: a + b
+    BinaryOp(Box<Expr>, BinaryOp, Box<Expr>),
+    
+    /// Unary Operation: -a
+    UnaryOp(UnaryOp, Box<Expr>),
 
     /// Field access: M.center, B.spread
     FieldAccess { object: Ident, field: Ident },
@@ -105,8 +146,16 @@ pub enum Expr {
     List(Vec<Expr>),
 }
 
+/// Literals
+#[derive(Debug, Clone, PartialEq)]
+pub enum Literal {
+    Num(f64),
+    Bool(bool),
+    Str(String),
+}
+
 /// Argument in function/method call (positional or named)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum CallArg {
     Positional(Expr),
     Named { name: Ident, value: Expr },
@@ -117,21 +166,21 @@ pub enum CallArg {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Manifold declaration: manifold M = embed(data, dim=3, tau=5)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ManifoldDecl {
     pub name: Ident,
     pub init: Expr,
 }
 
 /// Block declaration: block B = M.cluster(0:64)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BlockDecl {
     pub name: Ident,
     pub source: Expr,
 }
 
 /// Variable assignment: centroid C = B.center
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct VarDecl {
     pub type_hint: Option<Ident>,
     pub name: Ident,
@@ -139,13 +188,13 @@ pub struct VarDecl {
 }
 
 /// Regression statement with configuration
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RegressStmt {
     pub config: RegressConfig,
 }
 
 /// Regression configuration
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct RegressConfig {
     /// Model type: "polynomial", "rbf", "gp"
     pub model: String,
@@ -160,7 +209,7 @@ pub struct RegressConfig {
 }
 
 /// Convergence condition
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ConvergenceCond {
     /// Epsilon-based: convergence(epsilon=1e-6)
     Epsilon(Number),
@@ -171,14 +220,14 @@ pub enum ConvergenceCond {
 }
 
 /// Render statement: render M { color: by_density }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RenderStmt {
     pub target: Ident,
     pub config: RenderConfig,
 }
 
 /// Render configuration
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct RenderConfig {
     /// Color mode: by_density, gradient, cluster
     pub color: Option<String>,
@@ -195,13 +244,13 @@ pub struct RenderConfig {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Block of statements (nested scope)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Block {
     pub statements: Vec<Statement>,
 }
 
 /// If statement: if x > 0 { ... } else { ... }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct IfStmt {
     pub condition: Expr,
     pub then_branch: Block,
@@ -209,14 +258,14 @@ pub struct IfStmt {
 }
 
 /// While loop: while x < 10 { ... }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct WhileStmt {
     pub condition: Expr,
     pub body: Block,
 }
 
 /// For loop: for i in 0..10 { ... }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ForStmt {
     pub iterator: Ident,
     pub range: Range, // Simplified: currently only iterating ranges
@@ -224,13 +273,13 @@ pub struct ForStmt {
 }
 
 /// Seal loop (topological): seal { ... }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LoopStmt {
     pub body: Block,
 }
 
 /// Function declaration: fn add(a, b) { ... }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FnDecl {
     pub name: Ident,
     pub params: Vec<Ident>,
@@ -238,21 +287,21 @@ pub struct FnDecl {
 }
 
 /// Return statement: return x
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ReturnStmt {
     pub value: Option<Expr>,
 }
 
 /// Break statement
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BreakStmt;
 
 /// Continue statement
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ContinueStmt;
 
 /// Class declaration: class Point { x, y, fn init(self) { ... } }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ClassDecl {
     pub name: Ident,
     pub fields: Vec<VarDecl>, // Fields with default values
@@ -260,18 +309,18 @@ pub struct ClassDecl {
 }
 
 /// Import statement: import math; from topology import Betti;
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ImportStmt {
-    /// Module name: "math"
     pub module: Ident,
-    /// Specific symbol: "Betti" (if From import)
     pub symbol: Option<Ident>,
-    // Alias: "m" (import math as m) - Future work
 }
 
-/// Any statement in an AEGIS program
-#[derive(Debug, Clone)]
-pub enum Statement {
+/// AEGIS Statement wrapped with source span
+pub type Statement = Spanned<StmtKind>;
+
+/// Statement kinds in AEGIS
+#[derive(Debug, Clone, PartialEq)]
+pub enum StmtKind {
     Manifold(ManifoldDecl),
     Block(BlockDecl),
     Var(VarDecl),
@@ -289,13 +338,6 @@ pub enum Statement {
     Fn(FnDecl),
     Return(ReturnStmt),
     Break(BreakStmt),
-    
-    // Continue statement - already defined above? No, I see it twice in the error log.
-    // The previous block end was:
-    // Break(BreakStmt),
-    // Continue(ContinueStmt),
-    // + Continue(ContinueStmt),
-    
     Continue(ContinueStmt),
 
     /// Expression statement (method call, assignment, etc.)
@@ -306,7 +348,7 @@ pub enum Statement {
 }
 
 /// Complete AEGIS program
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Program {
     pub statements: Vec<Statement>,
 }

@@ -29,6 +29,7 @@ pub mod ml;
 pub mod state;
 pub mod os;
 pub mod topology;
+pub mod memory;
 
 // Re-export key types for convenience
 pub use aether::{BlockMetadata, DriftDetector, HierarchicalBlockTree};

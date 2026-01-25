@@ -40,6 +40,9 @@ enum Commands {
         /// Path to .aegis or .ag file
         #[arg(value_name = "FILE")]
         file: PathBuf,
+        /// Execution Mode: "bio" (default) or "titan"
+        #[arg(long, default_value = "bio")]
+        mode: String,
     },
 
     /// Check syntax of an AEGIS script
@@ -60,7 +63,7 @@ fn main() {
 
         match cli.command {
             Some(Commands::Repl) | None => run_repl(),
-            Some(Commands::Run { file }) => run_file(&file),
+            Some(Commands::Run { file, mode }) => run_file(&file, &mode),
             Some(Commands::Check { file }) => check_file(&file),
         }
     }).unwrap();
@@ -145,9 +148,10 @@ fn execute_line(interpreter: &mut Interpreter, source: &str) -> Result<String, S
 }
 
 /// Run an AEGIS script file
-fn run_file(path: &PathBuf) {
+fn run_file(path: &PathBuf, mode: &str) {
     println!("═══════════════════════════════════════════════════════════════");
     println!("  🛡️ AEGIS - Running: {}", path.display());
+    println!("  Mode: {}", mode);
     println!("═══════════════════════════════════════════════════════════════");
 
     let source = match fs::read_to_string(path) {
@@ -166,8 +170,6 @@ fn run_file(path: &PathBuf) {
         }
     }
 
-    let mut interpreter = Interpreter::new();
-
     // Parse (parser handles tokenization internally)
     let mut parser = Parser::new(&source);
     let ast = match parser.parse() {
@@ -178,16 +180,39 @@ fn run_file(path: &PathBuf) {
         }
     };
 
-    // Execute
-    match interpreter.execute(&ast) {
-        Ok(result) => {
-            println!("{:?}", result);
-            println!();
-            println!("Execution complete. 🦭");
+    if mode == "titan" {
+        use aegis_lang::vm::{TitanVM, Compiler};
+        // Compile to Bytecode
+        let compiler = Compiler::new();
+        let code = compiler.compile(&ast);
+        
+        let mut vm = TitanVM::new();
+        vm.load_code(code);
+        
+        match vm.run() {
+            Ok(result) => {
+                println!("{:?}", result);
+                println!();
+                println!("Titan Execution complete. ⚡");
+            }
+            Err(e) => {
+                eprintln!("Titan Runtime error: {}", e);
+                std::process::exit(1);
+            }
         }
-        Err(e) => {
-            eprintln!("Runtime error: {}", e);
-            std::process::exit(1);
+    } else {
+        // Bio-Script (Standard Interpreter)
+        let mut interpreter = Interpreter::new();
+        match interpreter.execute(&ast) {
+            Ok(result) => {
+                println!("{:?}", result);
+                println!();
+                println!("Bio-Script Execution complete. 🦭");
+            }
+            Err(e) => {
+                eprintln!("Runtime error: {}", e);
+                std::process::exit(1);
+            }
         }
     }
 }

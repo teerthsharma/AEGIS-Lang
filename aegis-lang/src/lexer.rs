@@ -127,11 +127,13 @@ pub struct Token {
     pub kind: TokenKind,
     pub line: usize,
     pub column: usize,
+    pub start: usize,
+    pub end: usize,
 }
 
 impl Token {
-    pub fn new(kind: TokenKind, line: usize, column: usize) -> Self {
-        Self { kind, line, column }
+    pub fn new(kind: TokenKind, line: usize, column: usize, start: usize, end: usize) -> Self {
+        Self { kind, line, column, start, end }
     }
 }
 
@@ -326,12 +328,13 @@ impl<'a> Lexer<'a> {
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
 
+        let start = self.current_pos;
         let line = self.line;
         let column = self.column;
 
         let c = match self.advance() {
             Some(c) => c,
-            None => return Token::new(TokenKind::Eof, line, column),
+            None => return Token::new(TokenKind::Eof, line, column, start, start),
         };
 
         let kind = match c {
@@ -418,7 +421,8 @@ impl<'a> Lexer<'a> {
             }
         };
 
-        Token::new(kind, line, column)
+        let end = self.current_pos;
+        Token::new(kind, line, column, start, end)
     }
 
     /// Tokenize entire source into a vector

@@ -41,6 +41,7 @@ pub mod interpreter;
 pub mod lexer;
 pub mod parser;
 pub mod webgl_export;
+pub mod vm;
 
 // Re-exports for convenience
 pub use ast::*;
