@@ -22,6 +22,14 @@ Memory is not a bucket; it is a topological space. Objects (nodes) have connecti
     *   Objects not reached by the tracer are identified as "High Entropy".
     *   The GC "prunes" these branches, reclaiming their space relative to the Manifold density.
 
+**Safety Protocol: Chebyshev's Guard**
+To preventing over-eager pruning (accidental deletion of live objects), we use **Chebyshev Approximations** to define a "Liveness Field".
+*   We calculate the centroid and variance of memory access patterns.
+*   We apply **Chebyshev's Inequality** to set a safety boundary.
+*   **Rule:** An object is only pruned if its "Liveness Probability" is statistically zero ($> k\sigma$ distance from active manifold).
+    $$ P(|X - \mu| \ge k\sigma) \le \frac{1}{k^2} $$
+*   This ensures that the GC checks strictly before modifying the topology.
+
 ```rust
 struct ManifoldHeap {
     objects: Vec<Box<Object>>, // The "Substrate"
@@ -30,8 +38,13 @@ struct ManifoldHeap {
 
 impl ManifoldHeap {
     fn regulate_entropy(&mut self) {
-        let live_set = self.trace_topology();
-        self.prune_disconnected(live_set); // "Cellular Autophagy"
+        // 1. Approximate the "Liveness Shape" using Chebyshev polynomials
+        let live_boundary = self.approximate_liveness_bound();
+        
+        // 2. Only prune if outside the Chebyshev Box (Safety Check)
+        self.objects.retain(|obj| {
+            live_boundary.contains(obj) || !obj.is_disconnected()
+        });
     }
 }
 ```
