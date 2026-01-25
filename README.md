@@ -105,6 +105,50 @@ render M { target: "ascii_render" }~
 
 ---
 
+## 📦 Installation
+
+### Via Pip (Recommended)
+
+You can install AEGIS directly from PyPI (once published):
+
+```bash
+pip install aegis-lang
+```
+
+This will install the `aegis` command-line tool.
+
+### From Source
+
+To build and install from source, you need Rust and Python installed.
+
+```bash
+git clone https://github.com/teerthsharma/aegis
+cd aegis/aegis-cli
+pip install .
+```
+
+## 📦 Installation
+
+### Via Pip (Recommended)
+
+You can install AEGIS directly from PyPI (once published):
+
+```bash
+pip install aegis-lang
+```
+
+This will install the `aegis` command-line tool.
+
+### From Source
+
+To build and install from source, you need Rust and Python installed.
+
+```bash
+git clone https://github.com/teerthsharma/aegis
+cd aegis/aegis-cli
+pip install .
+```
+
 ## 🚀 Getting Started
 
 ### 1. Build the AEGIS CLI

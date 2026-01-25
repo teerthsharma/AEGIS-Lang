@@ -56,7 +56,18 @@ FROM rust:1.75-slim-bookworm AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl3 \
     ca-certificates \
+    python3 \
+    python3-pip \
+    python3-venv \
     && rm -rf /var/lib/apt/lists/*
+
+# Create virtual environment for Python dependencies
+ENV VIRTUAL_ENV=/opt/venv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+# Install Python ML stack for benchmarking
+RUN pip3 install --no-cache-dir torch transformers sentencepiece protobuf
 
 WORKDIR /aegis
 

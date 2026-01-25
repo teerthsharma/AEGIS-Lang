@@ -1,0 +1,32 @@
+[build-system]
+requires = ["maturin>=1.4,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "aegis-lang"
+version = "0.1.0"
+description = "Current World's Fastest Agentic AI Language"
+authors = [
+    { name = "AEGIS Research Team", email = "teerth@example.com" },
+]
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: Software Development :: Interpreters",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+]
+
+[tool.maturin]
+# Use the executable name 'aegis'
+python-source = "python"
+module-name = "aegis_lang"
+features = ["pyo3/extension-module"]
+
+[[tool.maturin.bin]]
+name = "aegis"
+path = "src/main.rs"

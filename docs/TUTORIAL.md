@@ -293,7 +293,96 @@ render M {
 // The 3D manifold reveals structure invisible in high dimensions
 ```
 
+
 ---
+
+## Part 6: Machine Learning & LLMs
+
+AEGIS includes a native Tensor engine and integration with Hugging Face's Candle, allowing for direct execution of Large Language Models (LLMs) and custom Neural Networks.
+
+### 6.1 Loading LLMs (Transformers)
+
+AEGIS treats models as first-class citizens. You can load quantized models directly from the Hugging Face Hub:
+
+```aegis
+import Ml
+
+// Load TinyLlama (quantized) straight from HF Hub
+// This returns a LlamaModel handle
+let model = Ml.load_llama("TinyLlama/TinyLlama-1.1B-Chat-v1.0")
+```
+
+### 6.2 Generative Inference
+
+Generating text is a native geometric operation:
+
+```aegis
+let prompt = "Explain quantum physics to a 5 year old."
+
+// Generate 50 tokens
+let output = Ml.generate(model, prompt, 50)
+
+print(output)
+```
+
+### 6.3 Building Custom Neural Networks
+
+You can build layer-wise networks using the `Ml` module's primitives.
+
+**Attention Mechanism (Sparse-Event):**
+```aegis
+// Q, K, V are tensors
+let Q = Ml.embed(tokens, embedding_matrix)
+let K = Q
+let V = Q
+
+// Native attention operation
+let context = Ml.attention(Q, K, V)
+```
+
+**Custom Training Loop:**
+```aegis
+// Define weights
+let w = Ml.load_weights("https://server/weights.safetensors", "layer1.w")
+
+// Backpropagation
+// Ml.backward() returns gradients for the tensor
+let grad = Ml.backward(loss)
+
+// Update step (SGD)
+let w_new = Ml.update(w, grad, 0.01)
+```
+
+### 6.4 Classical ML: KMeans Clustering
+
+AEGIS performs topological clustering natively.
+
+```aegis
+// Create a KMeans clusterer with k=3
+let kmeans = Ml.kmeans(3)
+
+// Fit to data (list of points)
+// Returns list of centroids
+let centroids = kmeans.fit(data)
+
+let labels = kmeans.predict(data)
+```
+
+### 6.5 Computer Vision: Conv2D
+
+Geometric convolution for manifold feature extraction.
+
+```aegis
+// Create Conv2D layer
+// filters=32, kernel=3, stride=1, padding=1, activation="relu"
+let layer = Ml.conv2d(32, 3, 1, 1, "relu")
+
+// Forward pass
+let feature_map = layer.forward(image_tensor)
+```
+
+---
+
 
 ## Exercises
 
