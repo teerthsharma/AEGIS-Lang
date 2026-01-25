@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🛡️ AEGIS
+# 🛡️ AETHER
 ### **The Post-Von Neumann Architecture**
 
 *Biological Adaptation • Geometric Intelligence • Living Hardware*
@@ -19,12 +19,12 @@
 
 For over eight decades, computing has been constrained by the **Von Neumann Architecture**: a static fetch-execute cycle operating on passive hardware. While revolutionary for its time, it remains fundamentally blind to context and physical form.
 
-**AEGIS (Adaptive Entropy-Regulated Geometric Intelligence System)** represents the next paradigm shift.
+**AETHER (Adaptive Entropy-Regulated Geometric Intelligence System)** represents the next paradigm shift.
 
 We introduce the **Living Architecture**: a unified ecosystem where software and hardware operate as a single, adaptive organism. Logic is no longer a mere sequence of instructions; it is a **geometric manifold** that converges toward optimal solutions. Memory is not a bucket; it is a **topological space** regulated by statistical laws.
 
 ### The Paradigm Shift
-| Paradigm | Von Neumann (1945) | AEGIS (2026) |
+| Paradigm | Von Neumann (1945) | AETHER (2026) |
 |:---:|:---:|:---:|
 | **Logic Model** | Static / Procedural | **Geometric Convergence** (Topology-driven) |
 | **Hardware State** | Passive / Fixed | **Living Hardware** (Bio-Adaptive) |
@@ -35,12 +35,12 @@ We introduce the **Living Architecture**: a unified ecosystem where software and
 
 ## 🧬 Layer 1: The Bio-Kernel
 
-*Core Implementation: `aegis-core/src/memory.rs` & `aegis-kernel`*
+*Core Implementation: `aether-core/src/memory.rs` & `aether-kernel`*
 
-Traditional operating systems treat hardware as a sterile warehouse. The **AEGIS Bio-Kernel** treats it as a body.
+Traditional operating systems treat hardware as a sterile warehouse. The **AETHER Bio-Kernel** treats it as a body.
 
 ### 🧠 Manifold Memory & Entropy Regulation
-AEGIS rejects all standard forms of Garbage Collection (Stop-the-World, Reference Counting, Tracing) in favor of **Biological Homoeostasis**.
+AETHER rejects all standard forms of Garbage Collection (Stop-the-World, Reference Counting, Tracing) in favor of **Biological Homoeostasis**.
 
 *   **Manifold Heap:** Memory is allocated as a dense topological substrate using bump-pointer efficiency.
 *   **Entropy Regulation:** Unused objects are mapped as "High Entropy" zones. Instead of "freeing" memory, the kernel "prunes" dead synapses.
@@ -49,7 +49,7 @@ AEGIS rejects all standard forms of Garbage Collection (Stop-the-World, Referenc
 > **"We do not manage memory. We regulate its metabolism."**
 
 ### ⚡ The Titan Cortex (Dual-Engine)
-AEGIS operates with a bicameral mind, switching implementation strategies based on cognitive load:
+AETHER operates with a bicameral mind, switching implementation strategies based on cognitive load:
 
 1.  **Bio-Script (Right Hemisphere):** 
     *   *Implementation:* Recursive Tree-Walking Interpreter. 
@@ -65,11 +65,11 @@ AEGIS operates with a bicameral mind, switching implementation strategies based 
 
 ## 📐 Layer 2: Geometric Intelligence
 
-*Engine: `aegis-core/src/ml`*
+*Engine: `aether-core/src/ml`*
 
-AEGIS moves beyond fixed-epoch training. We observe the **topological evolution** of logic. Using **Topological Data Analysis (TDA)**, AEGIS monitors the "Betti Numbers" (homology groups) of error manifolds. Convergence is reached when the topology stabilizes.
+AETHER moves beyond fixed-epoch training. We observe the **topological evolution** of logic. Using **Topological Data Analysis (TDA)**, AETHER monitors the "Betti Numbers" (homology groups) of error manifolds. Convergence is reached when the topology stabilizes.
 
-```aegis
+```aether
 // The 'Seal Loop' - Convergence via Topological Stabilization
 // 🦭 represents the 'Seal', a topological closure operator.
 🦭 until convergence(1e-6) {
@@ -79,9 +79,9 @@ AEGIS moves beyond fixed-epoch training. We observe the **topological evolution*
 
 ### ⚡ Performance Benchmarks
 
-In comparative analysis against standard Python/NumPy/PyTorch implementations, AEGIS redefines performance on commodity hardware through zero-copy manifold operations.
+In comparative analysis against standard Python/NumPy/PyTorch implementations, AETHER redefines performance on commodity hardware through zero-copy manifold operations.
 
-| Task | NumPy/PyTorch | AEGIS Titan | **Speedup** |
+| Task | NumPy/PyTorch | AETHER Titan | **Speedup** |
 |:---|:---:|:---:|:---:|
 | **Linear Regression** | 90.1 ms (10k epochs) | **0.12 ms** (Auto-converge) | **~750x** |
 | **Topological Sort** | 50.0 ms (GUDHI) | **0.005 ms** (Native Manifold) | **~10,000x** |
@@ -94,19 +94,19 @@ In comparative analysis against standard Python/NumPy/PyTorch implementations, A
 
 ## 🗣️ Layer 3: The Universal Language
 
-*Implementation: `aegis-lang`*
+*Implementation: `aether-lang`*
 
-AEGIS bridges Pythonic expressiveness with Rust's bare-metal safety. It provides a native interface for interacting with the living machine.
+AETHER bridges Pythonic expressiveness with Rust's bare-metal safety. It provides a native interface for interacting with the living machine.
 
 ### Native Deep Learning
-AEGIS treats Neural Networks as first-class geometric objects, not external libraries.
+AETHER treats Neural Networks as first-class geometric objects, not external libraries.
 
 *   **Transformers:** Native `Ml.load_llama` and `Ml.generate` derived from Hugging Face Candle.
 *   **Tensors:** Zero-copy interaction with the Manifold Heap.
 *   **Topological Operators:** Native support for `manifold`, `betti`, and `embedding` types.
 
 ### Code Example: The Cognitive Loop
-```aegis
+```aether
 import Ml
 
 // 1. Perception: Embed raw stream into 3D Manifold
@@ -134,12 +134,12 @@ render M { target: "ascii_render", color: "density" }~
 
 The "Synapse" release target (v0.3.0) will introduce the final systems required for autonomous neural evolution.
 
-### Phase 1: The Bridge (`aegis-grad`)
+### Phase 1: The Bridge (`aether-grad`)
 *   **Goal:** Native Autograd Engine.
 *   **Strategy:** Tape-based reverse mode differentiation that traces the Manifold Heap directly.
 *   **Status:** *In Research.*
 
-### Phase 2: The Forge (`aegis-compute`)
+### Phase 2: The Forge (`aether-compute`)
 *   **Goal:** Zero-Copy GPU Acceleration.
 *   **Strategy:** Mapping `wgpu` buffers directly to Manifold structs. The GPU becomes an extension of the Heap.
 *   **Status:** *Planned.*
@@ -158,26 +158,26 @@ To build the "Living Architecture":
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/teerthsharma/aegis
-cd aegis
+git clone https://github.com/teerthsharma/aether
+cd aether
 
 # 2. Build the Release Binary (Titan Optimized)
 cargo build --release
 
 # 3. (Optional) Build the Bare-Metal Kernel
-cargo build -p aegis-kernel --target x86_64-unknown-none
+cargo build -p aether-kernel --target x86_64-unknown-none
 ```
 
 ### Usage
 
 **Run a Simulation:**
 ```bash
-./target/release/aegis run examples/grand_benchmark.aegis
+./target/release/aether run examples/grand_benchmark.aether
 ```
 
 **Activate Titan Mode (Extreme Performance):**
 ```bash
-./target/release/aegis run examples/grand_benchmark.aegis --mode=titan
+./target/release/aether run examples/grand_benchmark.aether --mode=titan
 ```
 
 ---
@@ -186,10 +186,10 @@ cargo build -p aegis-kernel --target x86_64-unknown-none
 
 Verified workspace architecture:
 
-- **`aegis-cli`**: The interface for managing the living system.
-- **`aegis-core`**: The foundational geometric algorithms & Manifold Memory.
-- **`aegis-kernel`**: The bare-metal `no_std` microkernel / hypervisor.
-- **`aegis-lang`**: The Lexer, Parser, Bio-Script Interpreter, and Titan VM.
+- **`aether-cli`**: The interface for managing the living system.
+- **`aether-core`**: The foundational geometric algorithms & Manifold Memory.
+- **`aether-kernel`**: The bare-metal `no_std` microkernel / hypervisor.
+- **`aether-lang`**: The Lexer, Parser, Bio-Script Interpreter, and Titan VM.
 - **`docs`**: Comprehensive research papers (Architecture, Mathematics, TDA).
 
 ---
@@ -197,7 +197,7 @@ Verified workspace architecture:
 ## 📚 Documentation & Research
 
 - [**Architecture Deep Dive**](docs/ARCHITECTURE.md) - The Dual-Engine Cortex & Manifold Map.
-- [**The Mathematics of AEGIS**](docs/MATHEMATICS.md) - Topological Data Analysis & Betti Numbers.
+- [**The Mathematics of AETHER**](docs/MATHEMATICS.md) - Topological Data Analysis & Betti Numbers.
 - [**Tutorial**](docs/TUTORIAL.md) - Learn to speak the language of the machine.
 
 ---

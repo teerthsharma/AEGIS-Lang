@@ -1,234 +1,290 @@
 //! ═══════════════════════════════════════════════════════════════════════════════
-//! AEGIS Autograd Engine
+//! AEGIS Autograd Engine (Ag) - The Bridge
 //! ═══════════════════════════════════════════════════════════════════════════════
 //!
-//! Reverse-mode automatic differentiation graph.
+//! "History is not a tree, it is a tape."
+//!
+//! A Wengert List (Tape-based) implementation of reverse-mode automatic 
+//! differentiation. It records operations on `Gc<Tensor>` handles, allowing
+//! the graph to be stored efficiently in the Manifold Heap.
 //!
 //! ═══════════════════════════════════════════════════════════════════════════════
 
-use alloc::rc::Rc;
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
-use alloc::vec;
-use core::cell::RefCell;
+#[cfg(feature = "std")]
+use std::vec::Vec;
+
+use crate::memory::{Gc, ManifoldHeap};
 use crate::ml::tensor::Tensor;
 
-/// A node in the computation graph
-#[derive(Clone)]
+/// Fundamental differentiable operations.
+/// Stored as a linear sequence in the GradTape.
+#[derive(Debug, Clone, Copy)]
+pub enum Op {
+    /// out = lhs + rhs
+    Add { out: Gc<Tensor>, lhs: Gc<Tensor>, rhs: Gc<Tensor> },
+    
+    /// out = lhs * rhs (element-wise)
+    Mul { out: Gc<Tensor>, lhs: Gc<Tensor>, rhs: Gc<Tensor> },
+    
+    /// out = lhs @ rhs (matrix multiplication)
+    MatMul { out: Gc<Tensor>, lhs: Gc<Tensor>, rhs: Gc<Tensor> },
+    
+    /// out = max(0, input)
+    ReLU { out: Gc<Tensor>, input: Gc<Tensor> },
+}
+
+/// The Gradient Tape.
+/// Records the history of operations for the backward pass.
+pub struct GradTape {
+    /// Linear sequence of operations
+    pub ops: Vec<Op>,
+}
+
+impl GradTape {
+    pub fn new() -> Self {
+        Self {
+            ops: Vec::with_capacity(1024),
+        }
+    }
+
+    /// Record an operation
+    pub fn push(&mut self, op: Op) {
+        self.ops.push(op);
+    }
+
+    /// Clear the tape (usually after backward)
+    pub fn clear(&mut self) {
+        self.ops.clear();
+    }
+}
+
+impl Default for GradTape {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// A Differentiable Variable.
+/// Lightweight wrapper around a Heap Handle (Gc).
+/// Gradients are computed externally during the backward pass.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Variable {
-    pub data: Tensor,
-    pub grad: Rc<RefCell<Option<Tensor>>>,
-    pub creator: Option<Rc<dyn Function>>,
+    pub data: Gc<Tensor>,
 }
 
 impl Variable {
-    /// Create a new leaf variable
-    pub fn new(data: Tensor) -> Self {
-        Self {
-            data,
-            grad: Rc::new(RefCell::new(None)),
-            creator: None,
-        }
+    /// Create a new variable handle
+    pub fn new(data: Gc<Tensor>) -> Self {
+        Self { data }
+    }
+}
+
+/// The Autograd Context.
+/// Manages the interaction between the Heap (data) and the Tape (history).
+pub struct Context<'a> {
+    pub heap: &'a mut ManifoldHeap<Tensor>,
+    pub tape: &'a mut GradTape,
+}
+
+impl<'a> Context<'a> {
+    pub fn new(heap: &'a mut ManifoldHeap<Tensor>, tape: &'a mut GradTape) -> Self {
+        Self { heap, tape }
     }
 
-    /// Access gradient
-    pub fn grad(&self) -> Option<Tensor> {
-        self.grad.borrow().clone()
+    /// Allocate a new variable (leaf)
+    pub fn var(&mut self, tensor: Tensor) -> Variable {
+        Variable::new(self.heap.alloc(tensor))
     }
 
-    /// Zero out gradient
-    pub fn zero_grad(&self) {
-        *self.grad.borrow_mut() = None;
-    }
-
-    /// Backpropagate gradients
-    pub fn backward(&self) {
-        // Topological sort not strictly needed if we just recurse, 
-        // but for a proper engine we want BFS/DFS or topo sort.
-        // For this MVP, we'll use simple recursion with implicit stack.
-        // In a real deep graph, this might overflow, so a queue is better.
+    /// Add two variables
+    pub fn add(&mut self, lhs: Variable, rhs: Variable) -> Variable {
+        let a = self.heap.get(lhs.data).expect("Stale handle LHS");
+        let b = self.heap.get(rhs.data).expect("Stale handle RHS");
+        let result = a.add(b);
+        let out = self.heap.alloc(result);
         
-        // Seed gradient with 1.0s if empty
-        if self.grad.borrow().is_none() {
-            let ones = Tensor::ones(&self.data.shape);
-            *self.grad.borrow_mut() = Some(ones);
-        }
+        self.tape.push(Op::Add { 
+            out, 
+            lhs: lhs.data, 
+            rhs: rhs.data 
+        });
+        
+        Variable::new(out)
+    }
 
-        // We need to traverse the graph. 
-        // Simplest valid approach for Phase 1: Recursive DFS
-        if let Some(ref func) = self.creator {
-            let grads = func.backward(self.grad.borrow().as_ref().unwrap());
-            let inputs = func.inputs();
-            
-            for (i, input) in inputs.iter().enumerate() {
-                let mut current_grad = input.grad.borrow_mut();
-                if let Some(ref mut g) = *current_grad {
-                    *g = g.add(&grads[i]);
-                } else {
-                    *current_grad = Some(grads[i].clone());
+    /// Multiply two variables
+    pub fn mul(&mut self, lhs: Variable, rhs: Variable) -> Variable {
+        let a = self.heap.get(lhs.data).expect("Stale handle LHS");
+        let b = self.heap.get(rhs.data).expect("Stale handle RHS");
+        let result = a.mul(b);
+        let out = self.heap.alloc(result);
+        
+        self.tape.push(Op::Mul { 
+            out, 
+            lhs: lhs.data, 
+            rhs: rhs.data 
+        });
+        
+        Variable::new(out)
+    }
+
+    /// Matrix Multiplication
+    pub fn matmul(&mut self, lhs: Variable, rhs: Variable) -> Variable {
+        let a = self.heap.get(lhs.data).expect("Stale handle LHS");
+        let b = self.heap.get(rhs.data).expect("Stale handle RHS");
+        let result = a.matmul(b);
+        let out = self.heap.alloc(result);
+        
+        self.tape.push(Op::MatMul { 
+            out, 
+            lhs: lhs.data, 
+            rhs: rhs.data 
+        });
+        
+        Variable::new(out)
+    }
+
+    /// ReLU Activation
+    pub fn relu(&mut self, input: Variable) -> Variable {
+        let val = self.heap.get(input.data).expect("Stale handle");
+        let result = val.map(|x| if x > 0.0 { x } else { 0.0 });
+        let out = self.heap.alloc(result);
+        
+        self.tape.push(Op::ReLU { 
+            out, 
+            input: input.data 
+        });
+        
+        Variable::new(out)
+    }
+
+    /// Reverse-Mode Backward Pass
+    /// Returns the gradients for all used variables as a Map (Vec indexed by Gc.index)
+    pub fn backward(&mut self, target: Variable) -> Vec<Option<Tensor>> {
+        let max_idx = self.heap.capacity();
+        let mut grads: Vec<Option<Tensor>> = vec![None; max_idx];
+        
+        // Seed output gradient
+        let target_tensor = self.heap.get(target.data).expect("Target lost");
+        grads[target.data.index] = Some(Tensor::ones(&target_tensor.shape));
+
+        // Iterate tape in reverse
+        for op in self.tape.ops.iter().rev() {
+            match op {
+                Op::Add { out, lhs, rhs } => {
+                     // Solves borrow checker by cloning Option first
+                     let grad_out = grads[out.index].clone();
+                     if let Some(grad) = grad_out {
+                         // dL/d(lhs) += dL/dout * 1
+                         Self::accumulate_grad(&mut grads, lhs.index, &grad);
+                         Self::accumulate_grad(&mut grads, rhs.index, &grad);
+                     }
+                },
+                Op::Mul { out, lhs, rhs } => {
+                    let grad_out = grads[out.index].clone();
+                    if let Some(grad) = grad_out {
+                        let lhs_val = self.heap.get(*lhs).unwrap();
+                        let rhs_val = self.heap.get(*rhs).unwrap();
+                        
+                        // dL/dLhs = grad_out * rhs
+                        let d_lhs = grad.mul(rhs_val);
+                        Self::accumulate_grad(&mut grads, lhs.index, &d_lhs);
+                        
+                        // dL/dRhs = grad_out * lhs
+                        let d_rhs = grad.mul(lhs_val);
+                        Self::accumulate_grad(&mut grads, rhs.index, &d_rhs);
+                    }
+                },
+                Op::MatMul { out, lhs, rhs } => {
+                     let grad_out = grads[out.index].clone();
+                     if let Some(grad) = grad_out {
+                        let lhs_val = self.heap.get(*lhs).unwrap();
+                        let rhs_val = self.heap.get(*rhs).unwrap();
+                        
+                        // C = A @ B
+                        // dA = dC @ B^T
+                        let d_lhs = grad.matmul(&rhs_val.transpose());
+                        Self::accumulate_grad(&mut grads, lhs.index, &d_lhs);
+                        
+                        // dB = A^T @ dC
+                        let d_rhs = lhs_val.transpose().matmul(&grad);
+                        Self::accumulate_grad(&mut grads, rhs.index, &d_rhs);
+                     }
+                },
+                Op::ReLU { out, input } => {
+                    let grad_out = grads[out.index].clone();
+                    if let Some(grad) = grad_out {
+                        let input_val = self.heap.get(*input).unwrap();
+                        // dL/dx = grad_out * (1 if x > 0 else 0)
+                        let mask = input_val.map(|x| if x > 0.0 { 1.0 } else { 0.0 });
+                        let d_input = grad.mul(&mask);
+                        Self::accumulate_grad(&mut grads, input.index, &d_input);
+                    }
                 }
-                drop(current_grad); // Release borrow
-                
-                // Recurse
-                input.backward(); 
+            }
+        }
+        
+        grads
+    }
+    
+    fn accumulate_grad(grads: &mut Vec<Option<Tensor>>, idx: usize, grad: &Tensor) {
+        if idx >= grads.len() {
+            grads.resize(idx + 1 + 256, None);
+        }
+        
+        match &mut grads[idx] {
+            Some(existing) => {
+                let new = existing.add(grad);
+                grads[idx] = Some(new);
+            }
+            None => {
+                grads[idx] = Some(grad.clone());
             }
         }
     }
 }
 
-/// Differentiable Function trait
-pub trait Function {
-    fn forward(&self) -> Tensor;
-    fn backward(&self, grad_output: &Tensor) -> Vec<Tensor>;
-    fn inputs(&self) -> Vec<Variable>;
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::memory::ManifoldHeap;
+    use crate::ml::tensor::Tensor;
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Operations
-// ═══════════════════════════════════════════════════════════════════════════════
+    #[test]
+    fn test_autograd_simple_mul() {
+        let mut heap = ManifoldHeap::<Tensor>::new();
+        let mut tape = GradTape::new();
+        let mut ctx = Context::new(&mut heap, &mut tape);
 
-// --- Add ---
-pub struct Add {
-    a: Variable,
-    b: Variable,
-}
+        let a = ctx.var(Tensor::new(&[2.0], &[1]));
+        let b = ctx.var(Tensor::new(&[3.0], &[1]));
+        let c = ctx.mul(a, b);
 
-impl Function for Add {
-    fn forward(&self) -> Tensor {
-        self.a.data.add(&self.b.data)
+        let grads = ctx.backward(c);
+
+        let da = grads[a.data.index].as_ref().unwrap();
+        let db = grads[b.data.index].as_ref().unwrap();
+
+        assert_eq!(da.get(&[0]), 3.0);
+        assert_eq!(db.get(&[0]), 2.0);
     }
 
-    fn backward(&self, grad_output: &Tensor) -> Vec<Tensor> {
-        // d/dx (x+y) = 1 * grad_output
-        // d/dy (x+y) = 1 * grad_output
-        vec![grad_output.clone(), grad_output.clone()]
-    }
+    #[test]
+    fn test_autograd_complex() {
+        // y = x^2 + x, at x=2. dy/dx = 2x + 1 = 5.
+        let mut heap = ManifoldHeap::<Tensor>::new();
+        let mut tape = GradTape::new();
+        let mut ctx = Context::new(&mut heap, &mut tape);
 
-    fn inputs(&self) -> Vec<Variable> {
-        vec![self.a.clone(), self.b.clone()]
-    }
-}
+        let x = ctx.var(Tensor::new(&[2.0], &[1]));
+        let x2 = ctx.mul(x, x);
+        let y = ctx.add(x2, x);
 
-pub fn add(a: &Variable, b: &Variable) -> Variable {
-    let func = Rc::new(Add { a: a.clone(), b: b.clone() });
-    let data = func.forward();
-    Variable {
-        data,
-        grad: Rc::new(RefCell::new(None)),
-        creator: Some(func),
-    }
-}
+        let grads = ctx.backward(y);
+        let dx = grads[x.data.index].as_ref().unwrap();
 
-// --- Mul ---
-pub struct Mul {
-    a: Variable,
-    b: Variable,
-}
-
-impl Function for Mul {
-    fn forward(&self) -> Tensor {
-        self.a.data.mul(&self.b.data)
-    }
-
-    fn backward(&self, grad_output: &Tensor) -> Vec<Tensor> {
-        // d/da (a*b) = b * grad_output
-        // d/db (a*b) = a * grad_output
-        let da = grad_output.mul(&self.b.data);
-        let db = grad_output.mul(&self.a.data);
-        vec![da, db]
-    }
-
-    fn inputs(&self) -> Vec<Variable> {
-        vec![self.a.clone(), self.b.clone()]
-    }
-}
-
-pub fn mul(a: &Variable, b: &Variable) -> Variable {
-    let func = Rc::new(Mul { a: a.clone(), b: b.clone() });
-    let data = func.forward();
-    Variable {
-        data,
-        grad: Rc::new(RefCell::new(None)),
-        creator: Some(func),
-    }
-}
-
-// --- MatMul ---
-pub struct MatMul {
-    a: Variable,
-    b: Variable,
-}
-
-impl Function for MatMul {
-    fn forward(&self) -> Tensor {
-        self.a.data.matmul(&self.b.data)
-    }
-
-    fn backward(&self, grad_output: &Tensor) -> Vec<Tensor> {
-        // C = A @ B
-        // dA = dC @ B^T
-        // dB = A^T @ dC
-        let da = grad_output.matmul(&self.b.data.transpose());
-        let db = self.a.data.transpose().matmul(grad_output);
-        vec![da, db]
-    }
-
-    fn inputs(&self) -> Vec<Variable> {
-        vec![self.a.clone(), self.b.clone()]
-    }
-}
-
-pub fn matmul(a: &Variable, b: &Variable) -> Variable {
-    let func = Rc::new(MatMul { a: a.clone(), b: b.clone() });
-    let data = func.forward();
-    Variable {
-        data,
-        grad: Rc::new(RefCell::new(None)),
-        creator: Some(func),
-    }
-}
-
-// --- ReLU ---
-pub struct ReLU {
-    input: Variable,
-}
-
-impl Function for ReLU {
-    fn forward(&self) -> Tensor {
-        let total_size: usize = self.input.data.shape.iter().product();
-        let mut result_data = Vec::with_capacity(total_size);
-        let data = self.input.data.data.borrow();
-        
-        for &val in data.iter() {
-            result_data.push(if val > 0.0 { val } else { 0.0 });
-        }
-        
-        Tensor::new(&result_data, &self.input.data.shape)
-    }
-
-    fn backward(&self, grad_output: &Tensor) -> Vec<Tensor> {
-        let total_size: usize = self.input.data.shape.iter().product();
-        let mut grad_data = Vec::with_capacity(total_size);
-        let input_data = self.input.data.data.borrow();
-        let grad_out_data = grad_output.data.borrow();
-        
-        for i in 0..total_size {
-            grad_data.push(if input_data[i] > 0.0 { grad_out_data[i] } else { 0.0 });
-        }
-        
-        vec![Tensor::new(&grad_data, &self.input.data.shape)]
-    }
-
-    fn inputs(&self) -> Vec<Variable> {
-        vec![self.input.clone()]
-    }
-}
-
-pub fn relu(a: &Variable) -> Variable {
-    let func = Rc::new(ReLU { input: a.clone() });
-    let data = func.forward();
-    Variable {
-        data,
-        grad: Rc::new(RefCell::new(None)),
-        creator: Some(func),
+        assert_eq!(dx.get(&[0]), 5.0);
     }
 }

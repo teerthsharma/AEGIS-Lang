@@ -1,6 +1,6 @@
-# AEGIS Examples
+# AETHER Examples
 
-A collection of annotated AEGIS scripts for common use cases.
+A collection of annotated AETHER scripts for common use cases.
 
 ---
 
@@ -18,7 +18,7 @@ A collection of annotated AEGIS scripts for common use cases.
 
 ### Example 1: Hello World
 
-The simplest AEGIS program:
+The simplest AETHER program:
 
 ```aegis
 // hello_world.aegis
@@ -514,7 +514,7 @@ aegis> load examples/escalating.aegis
 
 ## Contributing Examples
 
-Have a cool AEGIS script? Contribute it!
+Have a cool AETHER script? Contribute it!
 
 1. Fork the repo
 2. Add your script to `examples/`

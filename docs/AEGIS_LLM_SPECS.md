@@ -27,7 +27,7 @@ Building an LLM on AEGIS grants it distinct capabilities that standard models la
 
 ### 2. 🔮 Concept Drift "Sixth Sense"
 **The Power:** The model knows when the conversation is shifting.
-**How:** The **DriftDetector** (in `aegis-core`) tracks the trajectory of the data's centroid in the manifold. If the semantic meaning shifts too fast (high velocity), the Bio-Kernel can trigger a "Wake Up" interrupt or adjust learning rates dynamically.
+**How:** The **DriftDetector** (in `aether-core`) tracks the trajectory of the data's centroid in the manifold. If the semantic meaning shifts too fast (high velocity), the Bio-Kernel can trigger a "Wake Up" interrupt or adjust learning rates dynamically.
 **Result:** An LLM that adapts its "focus" instantly when you switch topics, rather than hallucinating based on old context.
 
 ### 3. 🧬 "Living" Self-Correction (Bio-Seal)

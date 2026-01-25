@@ -1,6 +1,6 @@
-# AEGIS Tutorial
+# AETHER Tutorial
 
-A step-by-step guide to mastering AEGIS, the 3D ML Language Kernel.
+A step-by-step guide to mastering AETHER, the 3D ML Language Kernel.
 
 ---
 
@@ -21,7 +21,7 @@ A step-by-step guide to mastering AEGIS, the 3D ML Language Kernel.
 Think of a manifold as a 3D sculpture of your data. Every data point becomes a location in 3D space, and patterns become geometric shapes you can see and manipulate.
 
 ```
-Traditional View:        AEGIS View:
+Traditional View:        AETHER View:
                         
   data = [1,2,3,4,5]        ●
                            ●  ●
@@ -31,7 +31,7 @@ Traditional View:        AEGIS View:
 
 ### 1.2 Creating Your First Manifold
 
-```aegis
+```aether
 // The embed() function transforms data into 3D space
 manifold M = embed(data, dim=3, tau=5)
 ```
@@ -61,7 +61,7 @@ The `tau` parameter controls how the embedding unfolds in time:
 
 A block is a region of your manifold - think of it as selecting a piece of the 3D sculpture:
 
-```aegis
+```aether
 manifold M = embed(data, dim=3, tau=5)
 
 // Extract points 0-63
@@ -78,7 +78,7 @@ block late = M[128:192]
 
 Every block has geometric properties:
 
-```aegis
+```aether
 block B = M[0:64]
 
 // Center point of the block
@@ -90,7 +90,7 @@ radius R = B.spread
 
 ### 2.3 Comparing Blocks
 
-```aegis
+```aether
 manifold M = embed(data, dim=3, tau=5)
 
 block A = M[0:50]
@@ -119,7 +119,7 @@ render M {
 
 Start with basic polynomial regression:
 
-```aegis
+```aether
 manifold M = embed(data, dim=3, tau=5)
 
 regress {
@@ -130,9 +130,9 @@ regress {
 
 ### 3.2 Escalating Regression
 
-Let AEGIS automatically find the right model complexity:
+Let AETHER automatically find the right model complexity:
 
-```aegis
+```aether
 manifold M = embed(data, dim=3, tau=5)
 
 regress {
@@ -160,7 +160,7 @@ Linear → Poly(2) → Poly(3) → Poly(4) → RBF → GP → Geodesic
 
 ### 3.4 Convergence Strategies
 
-```aegis
+```aether
 // Strict convergence
 until: convergence(1e-8)
 
@@ -207,7 +207,7 @@ Epoch  Model          Error    Betti    Action
 
 Create hierarchies for multi-scale analysis:
 
-```aegis
+```aether
 manifold M = embed(data, dim=3, tau=5)
 
 // Fine level (64 points)
@@ -233,7 +233,7 @@ c_coarse = coarse.center
 
 Anomalies are geometrically distant from cluster centroids:
 
-```aegis
+```aether
 manifold M = embed(sensor_data, dim=3, tau=10)
 
 // Normal behavior block
@@ -251,7 +251,7 @@ test_center = test.center
 
 ### 5.2 Time Series Forecasting
 
-```aegis
+```aether
 manifold M = embed(historical_data, dim=3, tau=7)
 
 regress {
@@ -266,7 +266,7 @@ regress {
 
 ### 5.3 Pattern Recognition
 
-```aegis
+```aether
 manifold M = embed(signal_data, dim=3, tau=5)
 
 // Extract known patterns
@@ -281,7 +281,7 @@ block unknown = M[200:300]
 
 ### 5.4 Dimensionality Reduction
 
-```aegis
+```aether
 // Embed high-dimensional data into 3D for visualization
 manifold M = embed(high_dim_data, dim=3, tau=3)
 
@@ -298,13 +298,13 @@ render M {
 
 ## Part 6: Machine Learning & LLMs
 
-AEGIS includes a native Tensor engine and integration with Hugging Face's Candle, allowing for direct execution of Large Language Models (LLMs) and custom Neural Networks.
+AETHER includes a native Tensor engine and integration with Hugging Face's Candle, allowing for direct execution of Large Language Models (LLMs) and custom Neural Networks.
 
 ### 6.1 Loading LLMs (Transformers)
 
-AEGIS treats models as first-class citizens. You can load quantized models directly from the Hugging Face Hub:
+AETHER treats models as first-class citizens. You can load quantized models directly from the Hugging Face Hub:
 
-```aegis
+```aether
 import Ml
 
 // Load TinyLlama (quantized) straight from HF Hub
@@ -316,7 +316,7 @@ let model = Ml.load_llama("TinyLlama/TinyLlama-1.1B-Chat-v1.0")
 
 Generating text is a native geometric operation:
 
-```aegis
+```aether
 let prompt = "Explain quantum physics to a 5 year old."
 
 // Generate 50 tokens
@@ -330,7 +330,7 @@ print(output)
 You can build layer-wise networks using the `Ml` module's primitives.
 
 **Attention Mechanism (Sparse-Event):**
-```aegis
+```aether
 // Q, K, V are tensors
 let Q = Ml.embed(tokens, embedding_matrix)
 let K = Q
@@ -341,7 +341,7 @@ let context = Ml.attention(Q, K, V)
 ```
 
 **Custom Training Loop:**
-```aegis
+```aether
 // Define weights
 let w = Ml.load_weights("https://server/weights.safetensors", "layer1.w")
 
@@ -355,9 +355,9 @@ let w_new = Ml.update(w, grad, 0.01)
 
 ### 6.4 Classical ML: KMeans Clustering
 
-AEGIS performs topological clustering natively.
+AETHER performs topological clustering natively.
 
-```aegis
+```aether
 // Create a KMeans clusterer with k=3
 let kmeans = Ml.kmeans(3)
 
@@ -372,7 +372,7 @@ let labels = kmeans.predict(data)
 
 Geometric convolution for manifold feature extraction.
 
-```aegis
+```aether
 // Create Conv2D layer
 // filters=32, kernel=3, stride=1, padding=1, activation="relu"
 let layer = Ml.conv2d(32, 3, 1, 1, "relu")

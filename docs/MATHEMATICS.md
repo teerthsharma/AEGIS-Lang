@@ -1,4 +1,4 @@
-# AEGIS-Shield Mathematical Specification
+# AETHER-Shield Mathematical Specification
 
 ## 1. State Space Formulation
 
@@ -8,7 +8,7 @@ The kernel state is represented as a point on a d-dimensional manifold:
 
 $$\mu(t) \in \mathbb{R}^d$$
 
-For AEGIS-Shield with d=4:
+For AETHER-Shield with d=4:
 
 $$\mu(t) = \begin{bmatrix} m(t) \\ i(t) \\ q(t) \\ e(t) \end{bmatrix}$$
 

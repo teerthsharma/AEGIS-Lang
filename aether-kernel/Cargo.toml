@@ -1,0 +1,53 @@
+[package]
+name = "aether-kernel"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "AETHER Bare-Metal Microkernel for x86_64"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# AETHER Kernel (Bare-Metal x86_64)
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# The original AETHER microkernel for research and embedded scenarios.
+# Runs on bare metal x86_64 with no operating system.
+#
+# Features:
+#   - Sparse event loop (wake on deviation Δ ≥ ε)
+#   - PID-on-Manifold governor for adaptive thresholds
+#   - Topological code authentication
+#   - WFI (Wait For Interrupt) power management
+#
+# Build:
+#   cargo build -p aether-kernel --target x86_64-unknown-none
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
+[features]
+default = []
+debug_topology = []
+profiling = []
+
+[dependencies]
+aether-core = { path = "../aether-core", default-features = false, features = ["no_std"] }
+aether-lang = { path = "../aether-lang", default-features = false, features = ["no_std"] }
+bootloader = { workspace = true, optional = true }
+x86_64 = { workspace = true }
+spin = { workspace = true }
+volatile = { workspace = true }
+heapless = { workspace = true }
+libm = { workspace = true }
+# serde = { workspace = true }
+getrandom = { version = "0.2", features = ["rdrand"] }
+multiboot2 = { version = "0.24.1", default-features = false }
+
+[lib]
+name = "aether_kernel"
+path = "src/lib.rs"
+
+[[bin]]
+name = "aether-kernel"
+path = "src/main.rs"
+
+

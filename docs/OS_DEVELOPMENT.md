@@ -1,10 +1,10 @@
-# OS Development with AEGIS
+# OS Development with AETHER
 
-This guide explains how to use the AEGIS core primitives to build an operating system kernel.
+This guide explains how to use the AETHER core primitives to build an operating system kernel.
 
 ## 1. Bootstrapping
 
-To use AEGIS in a bare-metal environment, you must disable the standard library.
+To use AETHER in a bare-metal environment, you must disable the standard library.
 In your kernel's `Cargo.toml`:
 
 ```toml
@@ -31,7 +31,7 @@ pub extern "C" fn kmain() -> ! {
 
 ## 2. Interrupt Handling
 
-AEGIS provides the `ExceptionFrame` struct to map raw stack data from interrupts.
+AETHER provides the `ExceptionFrame` struct to map raw stack data from interrupts.
 
 ```rust
 use aegis_core::os::ExceptionFrame;
@@ -69,7 +69,7 @@ impl Task {
 
 ## 4. Geometric Scheduling
 
-AEGIS is designed for **Sparse-Event** kernels. Instead of a simple round-robin scheduler, use the **Geometric Governor** to decide when to switch tasks.
+AETHER is designed for **Sparse-Event** kernels. Instead of a simple round-robin scheduler, use the **Geometric Governor** to decide when to switch tasks.
 
 ```rust
 use aegis_core::governor::GeometricGovernor;

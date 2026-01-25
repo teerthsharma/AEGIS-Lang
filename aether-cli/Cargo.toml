@@ -1,0 +1,37 @@
+[package]
+name = "aether-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "AETHER Cross-Platform CLI - Run AETHER on Windows, Linux, macOS"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# AETHER CLI (Cross-Platform Native Binary)
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# The primary user-facing tool for running AETHER programs.
+# Compiles natively on Windows, Linux, and macOS.
+#
+# Commands:
+#   aether repl              Interactive REPL
+#   aether run <file.aether>  Execute a script
+#   aether check <file.aether> Syntax validation
+#
+# Build:
+#   cargo build -p aether-cli --release
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
+[features]
+default = []
+
+[dependencies]
+aether-core = { path = "../aether-core" }
+aether-lang = { path = "../aether-lang" }
+clap = { workspace = true }
+rustyline = { workspace = true }
+
+[[bin]]
+name = "aether"
+path = "src/main.rs"

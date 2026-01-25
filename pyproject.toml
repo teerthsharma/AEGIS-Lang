@@ -3,11 +3,11 @@ requires = ["maturin>=1.4,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "aegis-lang"
+name = "aether-lang"
 version = "0.1.0"
 description = "Current World's Fastest Agentic AI Language"
 authors = [
-    { name = "AEGIS Research Team", email = "teerth@example.com" },
+    { name = "AETHER Research Team", email = "teerths57@gmail.com" },
 ]
 readme = "README.md"
 requires-python = ">=3.7"
@@ -22,10 +22,10 @@ classifiers = [
 ]
 
 [tool.maturin]
-# Use the executable name 'aegis'
+# Use the executable name 'aether'
 python-source = "python"
-module-name = "aegis_lang"
+module-name = "aether_lang"
 
 
-manifest-path = "aegis-cli/Cargo.toml"
-package = "aegis-cli"
+manifest-path = "aether-cli/Cargo.toml"
+package = "aether-cli"

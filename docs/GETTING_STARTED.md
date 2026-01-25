@@ -20,10 +20,10 @@ The easiest way to get started is with Docker:
 
 ```bash
 # Pull the AEGIS image
-docker pull teerthsharma/aegis
+docker pull teerthsharma/aether
 
 # Start the REPL
-docker run -it teerthsharma/aegis repl
+docker run -it teerthsharma/aether repl
 ```
 
 ### Option 2: From Source
@@ -36,8 +36,8 @@ rustup default nightly
 rustup component add rust-src llvm-tools-preview
 
 # Clone AEGIS
-git clone https://github.com/teerthsharma/aegis.git
-cd aegis
+git clone https://github.com/teerthsharma/aether.git
+cd aether
 
 # Build
 cargo build --release
@@ -47,10 +47,10 @@ cargo build --release
 
 ## Your First Script
 
-Create a file called `hello.aegis`:
+Create a file called `hello.aether`:
 
-```aegis
-// hello.aegis - Your first AEGIS program
+```aether
+// hello.aether - Your first AETHER program
 
 // Step 1: Create a 3D manifold from data
 // dim=3 means 3D space
@@ -73,10 +73,10 @@ Run it:
 
 ```bash
 # With Docker
-docker run -v $(pwd):/scripts teerthsharma/aegis run /scripts/hello.aegis
+docker run -v $(pwd):/scripts teerthsharma/aether run /scripts/hello.aether
 
 # Or in the REPL
-aegis> load hello.aegis
+aether> load hello.aether
 ```
 
 **Expected output:**
@@ -123,7 +123,7 @@ This transforms temporal patterns into geometric shapes!
 
 ### Creating a Manifold
 
-```aegis
+```aether
 // Basic manifold (3D, tau=1)
 manifold M = embed(data, dim=3)
 
@@ -140,7 +140,7 @@ manifold M = embed(sensor_readings, dim=3, tau=7)
 
 ### Basic Regression
 
-```aegis
+```aether
 manifold M = embed(data, dim=3, tau=5)
 
 // Simple polynomial regression
@@ -154,7 +154,7 @@ regress {
 
 The magic of AEGIS is **escalating regression** - automatically increasing model complexity until convergence:
 
-```aegis
+```aether
 manifold M = embed(data, dim=3, tau=5)
 
 regress {
@@ -189,7 +189,7 @@ regress {
 
 A **block** is a geometric region of the manifold - a cluster of nearby points.
 
-```aegis
+```aether
 manifold M = embed(data, dim=3, tau=5)
 
 // Extract block by index range
@@ -201,7 +201,7 @@ block B = M.cluster(0:64)
 
 ### Block Properties
 
-```aegis
+```aether
 block B = M[0:64]
 
 // Centroid (center point)
@@ -230,7 +230,7 @@ Instead of arbitrary loss thresholds, AEGIS detects convergence through **topolo
 
 ### Convergence Conditions
 
-```aegis
+```aether
 // Error threshold
 until: convergence(1e-6)
 
@@ -266,24 +266,24 @@ Now that you understand the basics:
 
 ## Common Issues
 
-### "Command not found: aegis"
+### "Command not found: aether"
 
 Make sure you're using Docker:
 ```bash
-docker run -it teerthsharma/aegis repl
+docker run -it teerthsharma/aether repl
 ```
 
 ### "File not found"
 
 Mount your directory when running scripts:
 ```bash
-docker run -v $(pwd):/scripts teerthsharma/aegis run /scripts/yourfile.aegis
+docker run -v $(pwd):/scripts teerthsharma/aether run /scripts/yourfile.aether
 ```
 
 ### "Convergence not reached"
 
 Try increasing max epochs or using a more flexible model:
-```aegis
+```aether
 regress {
     model: "rbf",
     escalate: true,
@@ -297,5 +297,5 @@ regress {
 
 - 📖 [Full Documentation](../README.md#-documentation)
 - ❓ [FAQ](FAQ.md)
-- 🐛 [Report Issues](https://github.com/teerthsharma/aegis/issues)
-- 💬 [Discussions](https://github.com/teerthsharma/aegis/discussions)
+- 🐛 [Report Issues](https://github.com/teerthsharma/aether/issues)
+- 💬 [Discussions](https://github.com/teerthsharma/aether/discussions)

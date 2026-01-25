@@ -21,7 +21,7 @@ Complete Rust API documentation for the AEGIS kernel.
 Tokenizes AEGIS source code.
 
 ```rust
-use aegis::lang::Lexer;
+use aether::lang::Lexer;
 
 let mut lexer = Lexer::new("manifold M = embed(data, dim=3)");
 let tokens = lexer.tokenize();
@@ -59,7 +59,7 @@ pub enum TokenKind {
 Parses token stream into AST.
 
 ```rust
-use aegis::lang::Parser;
+use aether::lang::Parser;
 
 let mut parser = Parser::new(source);
 let program = parser.parse()?;
@@ -76,7 +76,7 @@ let program = parser.parse()?;
 Executes AEGIS programs.
 
 ```rust
-use aegis::lang::{Parser, Interpreter};
+use aether::lang::{Parser, Interpreter};
 
 let mut parser = Parser::new(source);
 let program = parser.parse()?;
@@ -100,7 +100,7 @@ let result = interpreter.execute(&program)?;
 Non-linear regression on D-dimensional manifolds.
 
 ```rust
-use aegis::ml::regressor::{ManifoldRegressor, ModelType};
+use aether::ml::regressor::{ManifoldRegressor, ModelType};
 
 let mut regressor: ManifoldRegressor<3> = ManifoldRegressor::new(ModelType::Linear);
 regressor.add_point([0.0, 0.5, 0.25], 1.0);
@@ -149,7 +149,7 @@ pub enum ModelType {
 Detects topological convergence.
 
 ```rust
-use aegis::ml::convergence::{ConvergenceDetector, BettiNumbers};
+use aether::ml::convergence::{ConvergenceDetector, BettiNumbers};
 
 let mut detector = ConvergenceDetector::new(1e-6, 5);
 
@@ -176,7 +176,7 @@ if detector.is_converged() {
 Topological shape signature.
 
 ```rust
-use aegis::ml::convergence::BettiNumbers;
+use aether::ml::convergence::BettiNumbers;
 
 let betti = BettiNumbers::new(1, 0);
 assert!(betti.is_singular());  // Single component, no loops
@@ -194,7 +194,7 @@ assert!(betti.is_singular());  // Single component, no loops
 Auto-escalating benchmark runner.
 
 ```rust
-use aegis::ml::benchmark::{EscalatingBenchmark, BenchmarkConfig};
+use aether::ml::benchmark::{EscalatingBenchmark, BenchmarkConfig};
 
 let config = BenchmarkConfig {
     epsilon: 1e-6,
@@ -220,7 +220,7 @@ println!("Converged: {}, Epochs: {}", result.converged, result.epochs);
 Implements Takens' theorem for time-delay embedding.
 
 ```rust
-use aegis::manifold::TimeDelayEmbedder;
+use aether::manifold::TimeDelayEmbedder;
 
 let mut embedder: TimeDelayEmbedder<3> = TimeDelayEmbedder::new(5);  // tau=5
 
@@ -246,7 +246,7 @@ if let Some(point) = embedder.embed() {
 A point in D-dimensional manifold space.
 
 ```rust
-use aegis::manifold::ManifoldPoint;
+use aether::manifold::ManifoldPoint;
 
 let p1 = ManifoldPoint::<3>::new([1.0, 2.0, 3.0]);
 let p2 = ManifoldPoint::<3>::new([1.5, 2.5, 3.5]);
@@ -260,7 +260,7 @@ let is_close = p1.is_neighbor(&p2, 1.0);
 Sparse attention using geometric locality.
 
 ```rust
-use aegis::manifold::SparseAttentionGraph;
+use aether::manifold::SparseAttentionGraph;
 
 let mut graph: SparseAttentionGraph<3> = SparseAttentionGraph::new(0.5);
 
@@ -279,7 +279,7 @@ let (beta_0, beta_1) = graph.shape();
 Geometric metadata for a block of points.
 
 ```rust
-use aegis::aether::BlockMetadata;
+use aether::aether::{BlockMetadata, HierarchicalBlockTree};
 
 let points = vec![
     [0.0, 0.0, 0.0],
@@ -306,7 +306,7 @@ println!("Radius: {}", block.radius);
 Hierarchical tree for multi-scale analysis.
 
 ```rust
-use aegis::aether::HierarchicalBlockTree;
+use aether::aether::HierarchicalBlockTree;
 
 let mut tree: HierarchicalBlockTree<3> = HierarchicalBlockTree::new();
 tree.build_from_blocks(&blocks);
@@ -320,7 +320,7 @@ let pruning = tree.pruning_ratio(&active_mask);
 Track centroid drift for convergence detection.
 
 ```rust
-use aegis::aether::DriftDetector;
+use aether::aether::DriftDetector;
 
 let mut detector: DriftDetector<3> = DriftDetector::new();
 
@@ -341,7 +341,7 @@ if detector.is_drifting(0.1) {
 Compute topology of binary data.
 
 ```rust
-use aegis::topology::BinaryTopology;
+use aether::topology::BinaryTopology;
 
 let data = [0u8; 64];
 let topo = BinaryTopology::analyze(&data);
@@ -354,7 +354,7 @@ println!("β₀ = {}, β₁ = {}", topo.beta_0, topo.beta_1);
 Verify binary code via topological signature.
 
 ```rust
-use aegis::loader::TopologicalLoader;
+use aether::loader::TopologicalLoader;
 
 let loader = TopologicalLoader::new();
 let result = loader.verify(binary_data, reference_shape);

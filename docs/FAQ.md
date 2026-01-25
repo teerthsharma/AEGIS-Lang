@@ -36,15 +36,15 @@ Instead of stopping when `loss < threshold`, AEGIS stops when the **shape** of t
 
 **Docker (recommended):**
 ```bash
-docker pull teerthsharma/aegis
-docker run -it teerthsharma/aegis repl
+docker pull teerthsharma/aether
+docker run -it teerthsharma/aether repl
 ```
 
 **From source:**
 ```bash
 rustup install nightly
-git clone https://github.com/teerthsharma/aegis.git
-cd aegis && cargo build --release
+git clone https://github.com/teerthsharma/aether.git
+cd aether && cargo build --release
 ```
 
 ### Do I need Rust installed?
@@ -69,23 +69,23 @@ AEGIS uses unstable features:
 
 ### What's the file extension for AEGIS scripts?
 
-`.aegis` - for example: `my_script.aegis`
+`.aether` - for example: `my_script.aether`
 
 ### How do I run an AEGIS script?
 
 ```bash
 # Docker
-docker run -v $(pwd):/scripts teerthsharma/aegis run /scripts/script.aegis
+docker run -v $(pwd):/scripts teerthsharma/aether run /scripts/script.aether
 
 # REPL
-aegis> load script.aegis
+aether> load script.aether
 ```
 
 ### What does `tau` mean?
 
 `tau` (τ) is the **time delay** for Takens embedding. It controls how far apart samples are in the embedding:
 
-```aegis
+```aether
 // tau=1: adjacent samples
 manifold M = embed(data, dim=3, tau=1)
 
@@ -106,7 +106,7 @@ The embedding dimension. AEGIS typically uses 3D because:
 
 A block is a geometric region of the manifold - a subset of points. Think of it as selecting a piece of a 3D point cloud:
 
-```aegis
+```aether
 block B = M[0:64]     // Points 0-63
 block B = M.cluster(0:64)  // Same thing
 ```
@@ -158,7 +158,7 @@ Or check the output:
 
 ### How do I visualize my manifold?
 
-```aegis
+```aether
 render M {
     color: by_density
 }
@@ -178,7 +178,7 @@ Currently, AEGIS outputs ASCII visualization. WebGL and OBJ export are planned f
 
 ### How do I highlight specific blocks?
 
-```aegis
+```aether
 block B = M[0:64]
 render M {
     color: by_density,
@@ -219,12 +219,12 @@ Yes! AEGIS is `no_std` compatible and can run on:
 ### How do I mount local files in Docker?
 
 ```bash
-docker run -v $(pwd):/scripts teerthsharma/aegis run /scripts/your_file.aegis
+docker run -v $(pwd):/scripts teerthsharma/aether run /scripts/your_file.aether
 ```
 
 ### What Docker commands are available?
 
-- `docker run teerthsharma/aegis repl` - Interactive REPL
+- `docker run teerthsharma/aether repl` - Interactive REPL
 - `docker run teerthsharma/aegis run <file>` - Execute script
 - `docker run teerthsharma/aegis benchmark` - Run benchmarks
 - `docker run teerthsharma/aegis --help` - Show help

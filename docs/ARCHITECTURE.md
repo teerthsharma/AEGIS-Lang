@@ -1,12 +1,12 @@
-# AEGIS-Shield Architecture
+# AETHER-Shield Architecture
 
 ## System Overview
 
-AEGIS-Shield treats the kernel not as a "manager of resources" but as a **Dynamic System on a Manifold**.
+AETHER-Shield treats the kernel not as a "manager of resources" but as a **Dynamic System on a Manifold**.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           AEGIS-Shield Architecture                          │
+│                           AETHER-Shield Architecture                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  ┌─────────────────────────────────────────────────────────────────────┐    │
@@ -18,9 +18,9 @@ AEGIS-Shield treats the kernel not as a "manager of resources" but as a **Dynami
 │  └─────────────────────────────────────────────────────────────────────┘    │
 │                                    ↓                                         │
 │  ┌─────────────────────────────────────────────────────────────────────┐    │
-# AEGIS Architecture
+# AETHER Architecture
 
-A deep-dive into the design and implementation of the AEGIS 3D ML Language Kernel.
+A deep-dive into the design and implementation of the AETHER 3D ML Language Kernel.
 
 ---
 
@@ -30,7 +30,7 @@ A deep-dive into the design and implementation of the AEGIS 3D ML Language Kerne
 2. [Layer Architecture](#layer-architecture)
 3. [Language Pipeline](#language-pipeline)
 4. [ML Engine](#ml-engine)
-5. [Geometric Core](#geometric-core)
+5. [Geometric Core](#geomaether-core)
 6. [Kernel Layer](#kernel-layer)
 7. [Data Flow](#data-flow)
 8. [Memory Model](#memory-model)
@@ -40,13 +40,13 @@ A deep-dive into the design and implementation of the AEGIS 3D ML Language Kerne
 
 ## Overview
 
-AEGIS is structured as a **layered kernel** where each layer builds on primitives from the layer below:
+AETHER is structured as a **layered kernel** where each layer builds on primitives from the layer below:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     AEGIS Language Kernel                    │
+│                     AETHER Language Kernel                    │
 ├─────────────────────────────────────────────────────────────┤
-│  Layer 4: AEGIS DSL                                         │
+│  Layer 4: AETHER DSL                                         │
 ├─────────────────────────────────────────────────────────────┤
 │  Layer 3: ML Engine                                         │
 ├─────────────────────────────────────────────────────────────┤
@@ -117,7 +117,7 @@ Provides machine learning on manifolds:
 - `ConvergenceDetector` - Topological convergence
 - `ResidualAnalyzer<D>` - Residual topology
 
-### Layer 4: AEGIS DSL
+### Layer 4: AETHER DSL
 
 The user-facing language:
 
@@ -130,7 +130,7 @@ The user-facing language:
 
 ## Language Pipeline: The Dual-Engine Cortex
 
-AEGIS employs a bicameral execution model, functioning like the two hemispheres of a brain:
+AETHER employs a bicameral execution model, functioning like the two hemispheres of a brain:
 
 ### 1. Bio-Script (Right Hemisphere)
 *   **Role:** Rapid prototyping, reflection, dynamic logic.
@@ -150,8 +150,9 @@ AEGIS employs a bicameral execution model, functioning like the two hemispheres 
 
 ### Unified Memory: The Manifold Heap
 Both engines share the **Manifold Heap**, a biologically inspired memory arena.
-*   **Entropy Regulation:** Instead of GC, we use "Mark-and-Prune".
-*   **Chebyshev Guard:** Pruning is gated by statistical safety checks ($P < 1/k^2$).
+*   **Cyclic Manifold:** A "Bio-Clock" algorithm replaces traditional GC. Memory is treated as a cyclic ring.
+*   **Entropy Regulation:** Allocation overwrites "High Entropy" (unused) cells on contact.
+*   **Zero Scan:** We eliminate the O(N) scan entirely. Garbage is treated as passive background entropy.
 
 
 ### Lexer Detail
