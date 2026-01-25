@@ -935,6 +935,22 @@ impl Interpreter {
                  self.evaluate_binary(l, *op, r)
             },
             ExprKind::UnaryOp(_, _) => Err(String::from("Unary ops not implemented yet")),
+            ExprKind::Index { object, range } => {
+                // Simplified: returns a descriptive string or handle? 
+                // For now, let's treat it as a lookup that returns a sub-manifold or block value
+                let handle = self.get_manifold_handle(object)?;
+                let start = range.start.as_f64() as usize;
+                let end = range.end.as_f64() as usize;
+                if let Some(workspace) = self.manifolds.get(handle.0) {
+                    let block = workspace.extract_block(start, end);
+                    let block_handle = BlockHandle(self.blocks.len());
+                    self.blocks.push(block);
+                    Ok(Value::Block(block_handle))
+                } else {
+                    Err(format!("Manifold '{}' not found", object))
+                }
+            }
+            ExprKind::Config(_) => Err(String::from("Raw config blocks cannot be evaluated as expressions")),
         }
     }
     

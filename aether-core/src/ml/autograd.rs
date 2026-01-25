@@ -287,4 +287,48 @@ mod tests {
 
         assert_eq!(dx.get(&[0]), 5.0);
     }
+
+    #[test]
+    fn test_xor_backprop() {
+        let mut heap = ManifoldHeap::<Tensor>::new();
+        let mut tape = GradTape::new();
+        let mut ctx = Context::new(&mut heap, &mut tape);
+
+        // Input: [1.0, 1.0] (1x2)
+        let x = ctx.var(Tensor::new(&[1.0, 1.0], &[1, 2]));
+        
+        // W1: Identity [[1, 0], [0, 1]] (2x2)
+        let w1 = ctx.var(Tensor::new(&[1.0, 0.0, 0.0, 1.0], &[2, 2]));
+        
+        // W2: [[1], [-2]] (2x1)
+        let w2 = ctx.var(Tensor::new(&[1.0, -2.0], &[2, 1]));
+
+        // Forward
+        // z1 = x @ W1 = [1, 1]
+        let z1 = ctx.matmul(x, w1);
+        
+        // h1 = relu(z1) = [1, 1]
+        let h1 = ctx.relu(z1);
+        
+        // y = h1 @ W2 = 1*1 + 1*-2 = -1 (1x1)
+        let y = ctx.matmul(h1, w2);
+        
+        // Loss = (y - target)^2, target=0
+        // Loss = y * y
+        let loss = ctx.mul(y, y);
+        
+        // Backward
+        // dLoss/dy = 2y = -2
+        let grads = ctx.backward(loss);
+        
+        // Checks
+        let dy = grads[y.data.index].as_ref().unwrap();
+        // Manually: dL/dy = 2*(-1) = -2
+        assert!((dy.get(&[0,0]) - (-2.0)).abs() < 1e-6);
+        
+        let dw2 = grads[w2.data.index].as_ref().unwrap();
+        // dL/dW2 = h1.T @ dy = [[1], [1]] @ [-2] = [[-2], [-2]]
+        assert!((dw2.get(&[0,0]) - (-2.0)).abs() < 1e-6);
+        assert!((dw2.get(&[1,0]) - (-2.0)).abs() < 1e-6);
+    }
 }

@@ -1,7 +1,7 @@
 <div align="center">
 
 # 🛡️ AETHER
-### **The Post-Von Neumann Architecture**
+### **Declarative IR for Event-Driven Sparse Execution**
 
 *Biological Adaptation • Geometric Intelligence • Living Hardware*
 
@@ -19,16 +19,16 @@
 
 For over eight decades, computing has been constrained by the **Von Neumann Architecture**: a static fetch-execute cycle operating on passive hardware. While revolutionary for its time, it remains fundamentally blind to context and physical form.
 
-**AETHER (Adaptive Entropy-Regulated Geometric Intelligence System)** represents the next paradigm shift.
+**AETHER (Adaptive Entropy-Regulated Geometric Intelligence System)** represents the next paradigm shift in system orchestration.
 
-We introduce the **Living Architecture**: a unified ecosystem where software and hardware operate as a single, adaptive organism. Logic is no longer a mere sequence of instructions; it is a **geometric manifold** that converges toward optimal solutions. Memory is not a bucket; it is a **topological space** regulated by statistical laws.
+AETHER is not a general-purpose language. It is a **Declarative Intermediate Representation (IR)** designed to orchestrate the **Living Architecture**: a unified ecosystem where software and hardware operate as a single, adaptive organism. Logic is no longer a mere sequence of instructions; it is a **geometric manifold** that governs event-driven sparse execution. Memory is not a bucket; it is a **topological space** regulated by statistical laws.
 
 ### The Paradigm Shift
 | Paradigm | Von Neumann (1945) | AETHER (2026) |
 |:---:|:---:|:---:|
-| **Logic Model** | Static / Procedural | **Geometric Convergence** (Topology-driven) |
+| **Logic Model** | Static / Procedural | **Geometric Convergence** (Topology-driven IR) |
 | **Hardware State** | Passive / Fixed | **Living Hardware** (Bio-Adaptive) |
-| **Execution Flow** | Linear / Deterministic | **Manifold Embedding** (High-dimensional) |
+| **Execution Flow** | Linear / Deterministic | **Sparse-Event Orchestration** (Manifold-based) |
 | **Optimization** | Resource Allocation | **Entropy Regulation** (Chebyshev-Bounded) |
 
 ---
@@ -49,18 +49,16 @@ AETHER employs the **Titan Clock** (Bio-Clock), a cyclic metabolic allocator tha
 
 > **"We do not manage memory. We regulate its metabolism."**
 
-### ⚡ The Titan Cortex (Dual-Engine)
-AETHER operates with a bicameral mind, switching implementation strategies based on cognitive load:
+### ⚡ The Titan Cortex (Execution Target)
+AETHER IR translates high-level geometric intent into hardware-optimized execution via a bicameral target system:
 
-1.  **Bio-Script (Right Hemisphere):** 
-    *   *Implementation:* Recursive Tree-Walking Interpreter. 
-    *   *Role:* Rapid prototyping, reflection, dynamic logic, and "thought".
-    *   *Ideal for:* Scripting, configuration, and structural topology.
+1.  **AETHER-Script (Dynamic Orchestration):** 
+    *   *Role:* Rapid prototyping, structural topology, and dynamic system state declarations.
+    *   *Target:* Recursive Tree-Walking Interpreter for flexible "thought".
 
-2.  **Titan VM (Left Hemisphere):** 
-    *   *Implementation:* Stack-based Linear Bytecode VM (register-mapped).
-    *   *Role:* High-throughput simulation, massive parallelization, and "action".
-    *   *Ideal for:* Physics engines, neural training loops, and real-time control.
+2.  **Titan VM (High-Performance Collapse):** 
+    *   *Role:* High-throughput simulation, massive parallelization, and real-time event response.
+    *   *Target:* Stack-based Linear Bytecode VM for optimized "action".
 
 ---
 
@@ -95,11 +93,11 @@ AETHER operates via a bicameral architecture: **Bio-Script** for flexible though
 
 ---
 
-## 🗣️ Layer 3: The Universal Language
+## 🗣️ Layer 3: The Declarative Specification (IR)
 
 *Implementation: `aether-lang`*
 
-AETHER bridges Pythonic expressiveness with Rust's bare-metal safety. It provides a native interface for interacting with the living machine.
+AETHER provides a declarative interface for interacting with the living machine, bridging Pythonic expressiveness with the strict requirements of sparse-event execution targets. It is designed to specify "what shape the solution should take" rather than "how the CPU should move".
 
 ### Native Deep Learning
 AETHER treats Neural Networks as first-class geometric objects, not external libraries.
@@ -108,7 +106,7 @@ AETHER treats Neural Networks as first-class geometric objects, not external lib
 *   **Tensors:** Zero-copy interaction with the Manifold Heap.
 *   **Topological Operators:** Native support for `manifold`, `betti`, and `embedding` types.
 
-### Code Example: The Cognitive Loop
+### IR Example: Declaring a Cognitive Loop
 ```aether
 import Ml
 
@@ -192,7 +190,7 @@ Verified workspace architecture:
 - **`aether-cli`**: The interface for managing the living system.
 - **`aether-core`**: The foundational geometric algorithms & Manifold Memory.
 - **`aether-kernel`**: The bare-metal `no_std` microkernel / hypervisor.
-- **`aether-lang`**: The Lexer, Parser, Bio-Script Interpreter, and Titan VM.
+- **`aether-lang`**: The Lexer, Parser, AETHER-Script Interpreter, and Titan VM (The IR Pipeline).
 - **`docs`**: Comprehensive research papers (Architecture, Mathematics, TDA).
 
 ---

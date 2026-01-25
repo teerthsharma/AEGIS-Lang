@@ -1,17 +1,17 @@
-# AEGIS Language Specification
+# AETHER Declarative IR Specification
 
 > Version 0.1.0
 
 ## 1. Overview
 
-AEGIS is a domain-specific language for manifold-native machine learning, where code operates in 3D geometric space.
+AETHER is a declarative intermediate representation for event-driven sparse execution, where declarations specify terminal states in 3D geometric manifolds.
 
 ## 2. Syntax
 
-### 2.1 Comments
+### 2.1 Metadata and Annotations
 
 ```aegis
-// Single-line comment
+// Information annotation
 ```
 
 ### 2.2 Manifold Declaration

@@ -24,7 +24,7 @@ use core::cell::RefCell;
 use libm::{exp, sqrt};
 
 /// AEGIS Tensor: N-dimensional array
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Tensor {
     /// Shared data storage (flat generic buffer)
     pub data: Rc<RefCell<Vec<f64>>>,

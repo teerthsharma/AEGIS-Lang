@@ -304,7 +304,7 @@ impl Compiler {
                 // If there's an Else block, we need a Jump over it at end of Then
                 let mut jmp_end_idx = None;
                 
-                if let Some(else_branch) = &stmt.else_branch {
+                if let Some(_else_branch) = &stmt.else_branch {
                     jmp_end_idx = Some(self.code.len());
                     self.code.push(OpCode::JMP(0));
                 }

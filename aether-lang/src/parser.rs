@@ -175,7 +175,7 @@ impl<'a> Parser<'a> {
         
         // Special case: if Empty, just return a dummy empty statement with current token span
         if matches!(kind, StmtKind::Empty) {
-            let t = self.previous(); // Might be Newline we just consumed or previous
+            let _t = self.previous(); // Might be Newline we just consumed or previous
             // Doing it properly:
             return Ok(Statement { 
                 node: StmtKind::Empty, 
@@ -243,8 +243,9 @@ impl<'a> Parser<'a> {
         // 3. Expression Statement (e.g., method call) starting with Ident
         else {
             // We consumed the identifier. Parse the rest as an expression starting with this ident.
-            let kind = self.parse_ident_expr_cont(first_ident, &self.tokens[self.current-1])?;
-            Ok(StmtKind::Expr(self.wrap_expr(kind, &self.tokens[self.current-1])))
+            let start_token = self.tokens[self.current-1].clone();
+            let kind = self.parse_ident_expr_cont(first_ident, &start_token)?;
+            Ok(StmtKind::Expr(self.wrap_expr(kind, &start_token)))
         }
     }
 

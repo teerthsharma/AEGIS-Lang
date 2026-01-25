@@ -31,18 +31,20 @@ use core::marker::PhantomData;
 /// Unlike standard pointers, this is a topological index.
 /// 
 /// We implement Copy/Clone manually to avoid implicit T: Copy bound.
-#[derive(Debug)]
+#[derive(Debug, PartialOrd, Ord)]
 pub struct Gc<T> {
     pub index: usize,
     pub generation: u32,
-    _marker: core::marker::PhantomData<T>,
-}
-
-impl<T> Clone for Gc<T> {
-    fn clone(&self) -> Self { *self }
+    _marker: PhantomData<fn() -> T>, // Covariant, implies no ownership logic for drop
 }
 
 impl<T> Copy for Gc<T> {}
+
+impl<T> Clone for Gc<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
 
 impl<T> PartialEq for Gc<T> {
     fn eq(&self, other: &Self) -> bool {
@@ -51,19 +53,6 @@ impl<T> PartialEq for Gc<T> {
 }
 
 impl<T> Eq for Gc<T> {}
-
-impl<T> PartialOrd for Gc<T> {
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl<T> Ord for Gc<T> {
-    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
-         self.index.cmp(&other.index)
-            .then_with(|| self.generation.cmp(&other.generation))
-    }
-}
 
 impl<T> core::hash::Hash for Gc<T> {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
@@ -77,7 +66,7 @@ impl<T> Gc<T> {
         Self {
             index,
             generation,
-            _marker: core::marker::PhantomData,
+            _marker: PhantomData,
         }
     }
 }
@@ -322,10 +311,6 @@ impl<T> ManifoldHeap<T> {
         }
     }
     
-    pub fn capacity(&self) -> usize {
-        self.blocks.len() * 8
-    }
-    
     pub fn touch(&mut self, handle: Gc<T>) {
         let (b, s) = Self::resolve_index(handle.index);
         if b < self.blocks.len() {
@@ -355,7 +340,9 @@ impl<T> ManifoldHeap<T> {
         self.active_count
     }
 
-
+    pub fn capacity(&self) -> usize {
+        self.blocks.len() * 8
+    }
 }
 
 /// Chebyshev Guard logic.

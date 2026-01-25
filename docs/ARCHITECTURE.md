@@ -20,7 +20,7 @@ AETHER-Shield treats the kernel not as a "manager of resources" but as a **Dynam
 │  ┌─────────────────────────────────────────────────────────────────────┐    │
 # AETHER Architecture
 
-A deep-dive into the design and implementation of the AETHER 3D ML Language Kernel.
+A deep-dive into the design and implementation of the AETHER Declarative IR for Sparse-Event Execution.
 
 ---
 
@@ -44,17 +44,17 @@ AETHER is structured as a **layered kernel** where each layer builds on primitiv
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     AETHER Language Kernel                    │
+│                     AETHER Execution Pipeline                  │
 ├─────────────────────────────────────────────────────────────┤
-│  Layer 4: AETHER DSL                                         │
+│  Layer 4: AETHER Declarative IR                             │
 ├─────────────────────────────────────────────────────────────┤
-│  Layer 3: ML Engine                                         │
+│  Layer 3: ML Engine (Manifold Logic)                        │
 ├─────────────────────────────────────────────────────────────┤
 │  Layer 2: Geometric Primitives                              │
 ├─────────────────────────────────────────────────────────────┤
 │  Layer 1: Topological Analysis                              │
 ├─────────────────────────────────────────────────────────────┤
-│  Layer 0: Sparse-Event Microkernel                          │
+│  Layer 0: Sparse-Event Microkernel (Execution Target)       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -117,23 +117,23 @@ Provides machine learning on manifolds:
 - `ConvergenceDetector` - Topological convergence
 - `ResidualAnalyzer<D>` - Residual topology
 
-### Layer 4: AETHER DSL
+### Layer 4: AETHER Declarative IR
 
-The user-facing language:
+The top-level specification format for orchestrating sparse-event execution:
 
 **Components:**
-- `Lexer` - Tokenization
-- `Parser` - AST generation
-- `Interpreter` - Execution
+- `Lexer` - IR tokenization
+- `Parser` - Structural verification
+- `IntermediateRepresentation` - Canonical execution graph
 
 ---
 
-## Language Pipeline: The Dual-Engine Cortex
+## IR Consumption Pipeline: The Dual-Target Cortex
 
-AETHER employs a bicameral execution model, functioning like the two hemispheres of a brain:
+AETHER IR is consumed by a bicameral execution model, targeting different performance profiles:
 
-### 1. Bio-Script (Right Hemisphere)
-*   **Role:** Rapid prototyping, reflection, dynamic logic.
+### 1. AETHER-Script IR (Dynamic Orchestration)
+*   **Role:** Rapid prototyping, structural topology, dynamic state declaration.
 *   **Implementation:** Tree-Walking Interpreter.
 *   **Architecture:**
     ```
