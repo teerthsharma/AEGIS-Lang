@@ -27,5 +27,6 @@ python-source = "python"
 module-name = "aether_lang"
 
 
-manifest-path = "aether-cli/Cargo.toml"
-package = "aether-cli"
+manifest-path = "aether-lang/Cargo.toml"
+package = "aether-lang"
+features = ["python"]

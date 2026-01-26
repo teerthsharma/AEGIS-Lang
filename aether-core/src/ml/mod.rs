@@ -46,3 +46,4 @@ pub use convergence::*;
 pub use tensor::Tensor;
 pub use neural::{Activation, DenseLayer, TrainingResult, MLP, OptimizerConfig};
 pub use regressor::*;
+pub mod gossip;

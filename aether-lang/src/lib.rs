@@ -43,6 +43,9 @@ pub mod parser;
 pub mod webgl_export;
 pub mod vm;
 
+#[cfg(feature = "python")]
+pub mod python;
+
 // Re-exports for convenience
 pub use ast::*;
 pub use interpreter::Interpreter;

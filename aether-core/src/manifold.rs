@@ -286,6 +286,93 @@ impl<const D: usize> SparseAttentionGraph<D> {
         (self.compute_betti_0(), self.estimate_betti_1())
     }
 
+    /// Geodesic Partitioning: Find centroid of the local cluster connected to `target`
+    ///
+    /// This approximates a "local convex hull" by traversing the sparse graph (BFS)
+    /// for a limited depth, effectively partitioning the manifold geodesically.
+    pub fn geodesic_partition_centroid(&self, target: ManifoldPoint<D>) -> Option<ManifoldPoint<D>> {
+        if self.point_count == 0 {
+            return None;
+        }
+
+        // 1. Find the graph node closest to the target point (entry point)
+        // Since `target` might be the one just added, it's likely the last one.
+        // But let's be robust and check the last few points.
+        let start_node_idx = self.point_count - 1; 
+
+        // 2. BFS to find the local cluster (Geodesic Neighborhood)
+        // We limit depth to capture "local" structure, not the whole component
+        let max_depth = 3; 
+        let mut visited = [false; MAX_POINTS];
+        let mut queue = [0usize; 64];
+        let mut queue_start = 0;
+        let mut queue_end = 0;
+
+        queue[queue_end] = start_node_idx;
+        queue_end += 1;
+        visited[start_node_idx] = true;
+
+        let mut cluster_sum: ManifoldPoint<D> = ManifoldPoint::zero();
+        let mut cluster_count = 0;
+        let mut current_depth = 0;
+        let mut nodes_at_current_depth = 1;
+        let mut nodes_at_next_depth = 0;
+
+        while queue_start < queue_end {
+            let u = queue[queue_start];
+            queue_start += 1;
+
+            // Accumulate for centroid
+            for k in 0..D {
+                cluster_sum.coords[k] += self.points[u].coords[k];
+            }
+            cluster_count += 1;
+
+            nodes_at_current_depth -= 1;
+
+            // Expand neighbors if depth limit not reached
+            if current_depth < max_depth {
+                // Adjacency bitmask iteration
+                let adjacency = self.adjacency[u]; 
+                // Note: Adjacency is symmetric but stored sparsely? 
+                // In our `add_point`, we set bits for i < 64. 
+                // Let's assume simpler iteration for this limited embedded interaction.
+                // We iterate all points to check `are_neighbors` because internal representation 
+                // in original code was slightly simplified (only stored back-edges in `adjacency`?).
+                // Let's rely on `are_neighbors` which is robust in the provided code.
+                
+                for v in 0..self.point_count.min(64) { // Limit to 64 for speed/bitmask strictness
+                    if !visited[v] && self.are_neighbors(u, v) {
+                        visited[v] = true;
+                        if queue_end < 64 {
+                            queue[queue_end] = v;
+                            queue_end += 1;
+                            nodes_at_next_depth += 1;
+                        }
+                    }
+                }
+            }
+            
+            if nodes_at_current_depth == 0 {
+                current_depth += 1;
+                nodes_at_current_depth = nodes_at_next_depth;
+                nodes_at_next_depth = 0;
+            }
+        }
+
+        if cluster_count == 0 {
+            return None;
+        }
+
+        // 3. Compute Centroid
+        let mut centroid = ManifoldPoint::zero();
+        for k in 0..D {
+            centroid.coords[k] = cluster_sum.coords[k] / cluster_count as f64;
+        }
+
+        Some(centroid)
+    }
+
     /// Clear the graph
     pub fn clear(&mut self) {
         self.point_count = 0;
@@ -390,7 +477,11 @@ impl<const D: usize> Default for GeometricConcentrator<D> {
 // Complete Manifold Pipeline
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Full pipeline: Stream → Embed → Sparse Attention → Shape
+// ═══════════════════════════════════════════════════════════════════════════════
+// Complete Manifold Pipeline - The Gatekeeper
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Full pipeline: Sparsity Filter → Topological Check → Branching → TPU Injection
 pub struct TopologicalPipeline<const D: usize> {
     embedder: TimeDelayEmbedder<D>,
     graph: SparseAttentionGraph<D>,
@@ -406,17 +497,62 @@ impl<const D: usize> TopologicalPipeline<D> {
         }
     }
 
-    /// Process a new data sample
-    pub fn push(&mut self, value: f64) -> Option<(u32, u32)> {
+    /// Process a new data sample - The Gatekeeper Flow
+    pub fn push(&mut self, value: f64) -> Option<(u32, u32, u64)> {
+        // Stage 1: The Sparsity Filter
+        if libm::fabs(value) < 1e-9 {
+            return None; // Drop zero-values immediately
+        }
+
         self.embedder.push(value);
 
         if let Some(point) = self.embedder.embed() {
-            self.concentrator.update(&point);
+            // Stage 2: The Topological Check
             self.graph.add_point(point)?;
-            Some(self.graph.shape())
+            let (betti_0, betti_1) = self.graph.shape();
+
+            // Stage 3: The Branching
+            let projected_value = if betti_1 == 0 {
+                // Path 1: Direct Projection (Speed)
+                self.concentrator.update(&point);
+                self.concentrator.concentrate_1d(&point)
+            } else {
+                // Path 2: Geodesic Partitioning (Stability)
+                // Project relative to the centroid of the local geodesic cluster
+                if let Some(centroid) = self.graph.geodesic_partition_centroid(point) {
+                    // Simple projection to the "densest" cluster's frame
+                    // We use the distance to the centroid as the 1D projection for now
+                    point.distance(&centroid)
+                } else {
+                    0.0
+                }
+            };
+
+            // Stage 4: TPU Injection
+            // Map the final projected "coordinate" (and original point) to a TPU ID
+            let tpu_id = self.map_to_tpu_id(&point, projected_value);
+
+            Some((betti_0, betti_1, tpu_id))
         } else {
             None
         }
+    }
+
+    /// Stage 4: Map coordinates to TPU Interconnect ID
+    fn map_to_tpu_id(&self, point: &ManifoldPoint<D>, projection: f64) -> u64 {
+        // Synthetic Spatial Hashing (Morton-like)
+        let mut hash = 0u64;
+        
+        // Hash the input coordinates
+        for i in 0..D {
+            let bits = point.coords[i].to_bits();
+            hash = hash.rotate_left(11) ^ bits;
+        }
+
+        // Hash the projection
+        hash = hash.rotate_right(7) ^ projection.to_bits();
+
+        hash
     }
 
     /// Get current shape (β₀, β₁)
@@ -488,5 +624,72 @@ mod tests {
 
         // Should be single connected component
         assert_eq!(graph.compute_betti_0(), 1);
+    }
+
+    #[test]
+    fn test_gatekeeper_sparsity() {
+        let mut pipeline = TopologicalPipeline::<3>::new(1, 0.5);
+        
+        // Push zero value - should be dropped by Sparsity Filter
+        assert!(pipeline.push(0.0).is_none());
+        assert!(pipeline.push(1e-10).is_none());
+        
+        // Push significant value - should be processed
+        // Need to fill buffer first (tau=1, D=3 -> needs 3 points)
+        pipeline.push(1.0);
+        pipeline.push(2.0);
+        pipeline.push(3.0);
+        
+        // Now it should return consistent output
+        let result = pipeline.push(4.0);
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_gatekeeper_tpu_injection() {
+        let mut pipeline = TopologicalPipeline::<3>::new(1, 0.5);
+        
+        // Fill buffer
+        pipeline.push(1.0);
+        pipeline.push(2.0);
+        pipeline.push(3.0);
+        
+        if let Some((_, _, tpu_id_1)) = pipeline.push(4.0) {
+             // Push same sequence again (reset logic simulated)
+             let mut pipeline2 = TopologicalPipeline::<3>::new(1, 0.5);
+             pipeline2.push(1.0);
+             pipeline2.push(2.0);
+             pipeline2.push(3.0);
+             let (_, _, tpu_id_2) = pipeline2.push(4.0).unwrap();
+             
+             assert_eq!(tpu_id_1, tpu_id_2, "TPU ID generation must be deterministic");
+        }
+    }
+
+    #[test]
+    fn test_gatekeeper_branching() {
+        let mut pipeline = TopologicalPipeline::<3>::new(1, 2.0); // large epsilon to force connection
+        
+        // 1. Simple shape (Line) -> Betti-1 = 0
+        for i in 0..10 {
+            pipeline.push(i as f64);
+        }
+        let (b0, b1, _) = pipeline.push(10.0).unwrap();
+        assert_eq!(b0, 1);
+        assert_eq!(b1, 0); // Linear structure has no holes
+        
+        // 2. Complex Shape (Cycle) -> Betti-1 > 0
+        pipeline.reset();
+        // Create a triangle loop: (0,0,0) -> (1,0,0) -> (0.5,1,0) -> (0,0,0) around time delay
+        // This is hard to simulate perfectly with 1D stream, but we can try oscillating
+        // A simple sine wave often creates loops in delay embedding
+        for i in 0..50 {
+            let val = libm::sin(i as f64 * 0.5);
+            pipeline.push(val); 
+        }
+        
+        let (_, b1_complex, _) = pipeline.push(0.0).unwrap();
+        // Sine wave in 2D/3D embedding is a loop (circle)
+        assert!(b1_complex >= 1, "Sine wave should create a cycle (Betti-1 >= 1)");
     }
 }

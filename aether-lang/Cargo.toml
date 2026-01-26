@@ -29,6 +29,7 @@ std = ["aether-core/std", "alloc", "dep:reqwest", "dep:safetensors", "dep:wgpu",
 ml = ["dep:candle-core", "dep:candle-transformers", "dep:tokenizers", "dep:hf-hub"]
 alloc = []
 no_std = ["aether-core/no_std", "alloc"]
+python = ["dep:pyo3", "std"]
 
 [dependencies]
 aether-core = { path = "../aether-core", default-features = false }
@@ -44,7 +45,9 @@ candle-transformers = { version = "0.3.3", optional = true }
 tokenizers = { version = "0.15.2", optional = true }
 hf-hub = { version = "0.3.2", features = ["tokio"], optional = true }
 rand = { version = "0.8.5", default-features = false, features = ["alloc", "small_rng"] }
+pyo3 = { version = "0.20", features = ["extension-module"], optional = true }
 
 [lib]
 name = "aether_lang"
 path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
