@@ -688,7 +688,7 @@ mod tests {
             pipeline.push(val); 
         }
         
-        let (_, b1_complex, _) = pipeline.push(0.0).unwrap();
+        let (_, b1_complex, _) = pipeline.push(0.1).unwrap();
         // Sine wave in 2D/3D embedding is a loop (circle)
         assert!(b1_complex >= 1, "Sine wave should create a cycle (Betti-1 >= 1)");
     }
